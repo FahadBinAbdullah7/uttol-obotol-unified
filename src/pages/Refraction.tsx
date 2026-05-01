@@ -345,22 +345,55 @@ const Refraction = () => {
         ctx.restore();
       });
 
-      // Spectrum legend (bottom-right)
+      // Spectrum legend (bottom-right) with per-color angles
       ctx.save();
-      const lx = W - 130;
-      const ly = H - 10 - SPECTRUM.length * 16;
-      ctx.fillStyle = "rgba(0,0,0,0.45)";
-      ctx.fillRect(lx - 8, ly - 22, 130, SPECTRUM.length * 16 + 28);
-      ctx.fillStyle = "rgba(255,255,255,0.7)";
-      ctx.font = "11px Inter, sans-serif";
+      const legendW = 200;
+      const lx = W - legendW - 12;
+      const ly = H - 12 - SPECTRUM.length * 18 - 26;
+      ctx.fillStyle = "rgba(0,0,0,0.6)";
+      ctx.strokeStyle = "rgba(255,255,255,0.15)";
+      roundRect(ctx, lx - 8, ly - 22, legendW, SPECTRUM.length * 18 + 36, 8);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "rgba(255,235,150,0.95)";
+      ctx.font = "bold 12px Inter, sans-serif";
       ctx.textAlign = "left";
-      ctx.fillText("সাত রঙ (VIBGYOR)", lx, ly - 8);
+      ctx.fillText("VIBGYOR  ·  n  ·  বিচ্যুতি", lx, ly - 6);
+      ctx.font = "11px ui-monospace, monospace";
       SPECTRUM.forEach((c, i) => {
+        const dev = perColorDeviation[i];
         ctx.fillStyle = c.color;
-        ctx.fillRect(lx, ly + i * 16, 14, 10);
-        ctx.fillStyle = "rgba(255,255,255,0.85)";
-        ctx.fillText(c.name, lx + 22, ly + i * 16 + 9);
+        ctx.fillRect(lx, ly + i * 18, 14, 12);
+        ctx.fillStyle = "rgba(255,255,255,0.9)";
+        ctx.fillText(
+          `${c.name.padEnd(6, " ")}  n=${c.n.toFixed(3)}  δ=${dev.toFixed(1)}°`,
+          lx + 22,
+          ly + i * 18 + 10
+        );
       });
+      ctx.restore();
+
+      // === FORMULA HUD (top-left) for prism ===
+      const hx = 16, hy = 16, hw = 320, hh = 132;
+      ctx.save();
+      ctx.fillStyle = "rgba(0,0,0,0.6)";
+      ctx.strokeStyle = "rgba(255,255,255,0.15)";
+      roundRect(ctx, hx, hy, hw, hh, 10);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "rgba(255,235,150,0.95)";
+      ctx.font = "bold 13px Inter, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("বিচ্ছুরণ · Prism Dispersion", hx + 12, hy + 22);
+      ctx.fillStyle = "rgba(255,255,255,0.95)";
+      ctx.font = "13px ui-monospace, monospace";
+      ctx.fillText("sin(r) = sin(i) / n(λ)", hx + 12, hy + 44);
+      ctx.fillText("δ = (i₁+i₂) − A     (A = 60°)", hx + 12, hy + 64);
+      ctx.fillStyle = "rgba(180,220,255,0.95)";
+      const iDeg = (theta_i * 180) / Math.PI;
+      ctx.fillText(`আপতন  i ≈ ${iDeg.toFixed(1)}°`, hx + 12, hy + 88);
+      ctx.fillStyle = "rgba(177,75,255,0.95)";
+      ctx.fillText(`বেগুনি : n=1.532, বেশি বাঁকে`, hx + 12, hy + 106);
+      ctx.fillStyle = "rgba(255,59,59,0.95)";
+      ctx.fillText(`লাল    : n=1.510, কম বাঁকে`, hx + 12, hy + 124);
       ctx.restore();
     };
 
