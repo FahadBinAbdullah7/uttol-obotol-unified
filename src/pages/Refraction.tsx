@@ -53,6 +53,11 @@ const STYLES = `
 .ref-header h1 { font-size: 16px; font-weight: 700; margin: 0; }
 .ref-header p { font-size: 11px; color: var(--gray-500); margin: 2px 0 0; font-family: 'Inter',sans-serif; }
 .ref-card { background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 12px; }
+.experiment-row { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+@media (min-width: 768px) { .experiment-row { flex-direction: row; } }
+.experiment-canvas { flex: 1; min-width: 0; }
+.experiment-controls { flex: 0 0 auto; width: 100%; }
+@media (min-width: 768px) { .experiment-controls { width: 260px; } }
 .canvas-card { padding: 10px; }
 .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .tab-btn { padding: 10px 8px; border: 1px solid var(--border); background: #fff; border-radius: 10px; font-weight: 600; font-size: 13px; color: var(--gray-600); cursor: pointer; transition: all 180ms; min-height: 44px; font-family: inherit; }
@@ -638,57 +643,62 @@ const Refraction = () => {
           </div>
         </div>
 
-        <div className="ref-card canvas-card">
-          <div className="canvas-wrap">
-            <canvas ref={canvasRef} className="block w-full" style={{ height: 560 }} />
+        <div className="experiment-row">
+          <div className="experiment-canvas">
+            <div className="ref-card canvas-card">
+              <div className="canvas-wrap">
+                <canvas ref={canvasRef} className="block w-full" style={{ height: 560 }} />
+              </div>
+              <div className="action-row">
+                <button
+                  className={"anim-btn " + (animate ? "on" : "")}
+                  onClick={() => setAnimate((a) => !a)}
+                >
+                  {animate ? <Pause /> : <Play />}
+                  {animate ? "অ্যানিমেশন বন্ধ" : "অ্যানিমেশন চালু"}
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="action-row">
-            <button
-              className={"anim-btn " + (animate ? "on" : "")}
-              onClick={() => setAnimate((a) => !a)}
-            >
-              {animate ? <Pause /> : <Play />}
-              {animate ? "অ্যানিমেশন বন্ধ" : "অ্যানিমেশন চালু"}
-            </button>
-          </div>
-        </div>
-
-        <div className="ref-card">
-          <div className="slider-row">
-            <label><span>আপতন কোণ (i)</span><span className="val">{angleDeg}°</span></label>
-            <input
-              type="range"
-              min={5}
-              max={75}
-              value={angleDeg}
-              onChange={(e) => setAngleDeg(+e.target.value)}
-            />
-          </div>
-          {mode === "slab" && (
-            <>
+          <div className="experiment-controls">
+            <div className="ref-card">
               <div className="slider-row">
-                <label><span>প্রতিসরাঙ্ক (n)</span><span className="val">{n.toFixed(2)}</span></label>
+                <label><span>আপতন কোণ (i)</span><span className="val">{angleDeg}°</span></label>
                 <input
                   type="range"
-                  min={1.0}
-                  max={2.0}
-                  step={0.01}
-                  value={n}
-                  onChange={(e) => setN(+e.target.value)}
+                  min={5}
+                  max={75}
+                  value={angleDeg}
+                  onChange={(e) => setAngleDeg(+e.target.value)}
                 />
               </div>
-              <div className="slider-row">
-                <label><span>স্ল্যাবের পুরুত্ব</span><span className="val">{thickness}px</span></label>
-                <input
-                  type="range"
-                  min={60}
-                  max={260}
-                  value={thickness}
-                  onChange={(e) => setThickness(+e.target.value)}
-                />
-              </div>
-            </>
-          )}
+              {mode === "slab" && (
+                <>
+                  <div className="slider-row">
+                    <label><span>প্রতিসরাঙ্ক (n)</span><span className="val">{n.toFixed(2)}</span></label>
+                    <input
+                      type="range"
+                      min={1.0}
+                      max={2.0}
+                      step={0.01}
+                      value={n}
+                      onChange={(e) => setN(+e.target.value)}
+                    />
+                  </div>
+                  <div className="slider-row">
+                    <label><span>স্ল্যাবের পুরুত্ব</span><span className="val">{thickness}px</span></label>
+                    <input
+                      type="range"
+                      min={60}
+                      max={260}
+                      value={thickness}
+                      onChange={(e) => setThickness(+e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* FORMULA CARD */}

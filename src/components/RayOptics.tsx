@@ -947,57 +947,61 @@ export default function RayOptics() {
         </div>
       </div>
 
-      <div className="ro-card canvas-card">
-        <div className="canvas-wrap" ref={containerRef}>
-          <canvas
-            ref={canvasRef}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={onPointerUp}
-            style={{ touchAction: "none", cursor: dragRef.current.active ? "grabbing" : "grab" }}
-          />
-          <div className="canvas-hint bn">মোমবাতিকে ছুঁয়ে টেনে সরাও</div>
+      <div className="experiment-row">
+        <div className="experiment-canvas">
+          <div className="ro-card canvas-card">
+            <div className="canvas-wrap" ref={containerRef}>
+              <canvas
+                ref={canvasRef}
+                onPointerDown={onPointerDown}
+                onPointerMove={onPointerMove}
+                onPointerUp={onPointerUp}
+                onPointerCancel={onPointerUp}
+                style={{ touchAction: "none", cursor: dragRef.current.active ? "grabbing" : "grab" }}
+              />
+              <div className="canvas-hint bn">মোমবাতিকে ছুঁয়ে টেনে সরাও</div>
+            </div>
+            <div className="action-row">
+              <button
+                className={"light-btn " + (lightOn ? "on" : "")}
+                onClick={() => {
+                  if (lightOn) { setLightOn(false); setAnimProgress(0); }
+                  else { setLightOn(true); setAnimProgress(0); }
+                }}
+              >
+                {lightOn ? "আলো নিভাও" : "মোমবাতি জ্বালাও"}
+              </button>
+              <button className="reset-btn" onClick={() => { setAnimProgress(0); }}>আবার</button>
+            </div>
+            <div className="legend">
+              <span><i style={{ background: RAY_COLORS.ray1 }} /> সমান্তরাল রশ্মি</span>
+              <span><i style={{ background: RAY_COLORS.ray2 }} /> কেন্দ্রীয় রশ্মি</span>
+              <span><i style={{ background: RAY_COLORS.ray3 }} /> ফোকাস রশ্মি</span>
+              <span className="legend-dash">- - অভাসী</span>
+            </div>
+          </div>
         </div>
-        <div className="action-row">
-          <button
-            className={"light-btn " + (lightOn ? "on" : "")}
-            onClick={() => {
-              if (lightOn) { setLightOn(false); setAnimProgress(0); }
-              else { setLightOn(true); setAnimProgress(0); }
-            }}
-          >
-            {lightOn ? "আলো নিভাও" : "মোমবাতি জ্বালাও"}
-          </button>
-          <button className="reset-btn" onClick={() => { setAnimProgress(0); }}>আবার</button>
-        </div>
-        <div className="legend">
-          <span><i style={{ background: RAY_COLORS.ray1 }} /> সমান্তরাল রশ্মি</span>
-          <span><i style={{ background: RAY_COLORS.ray2 }} /> কেন্দ্রীয় রশ্মি</span>
-          <span><i style={{ background: RAY_COLORS.ray3 }} /> ফোকাস রশ্মি</span>
-          <span className="legend-dash">- - অভাসী</span>
-        </div>
-      </div>
-
-      <div className="ro-card">
-        <div className="slider-row">
-          <label><span>বস্তুর দূরত্ব (u)</span><span className="val">{fmtNum(u)} একক</span></label>
-          <input type="range" min={5} max={350} value={uMag} onChange={(e) => setUMag(+e.target.value)} />
-        </div>
-        <div className="slider-row">
-          <label><span>ফোকাস দূরত্ব (f)</span><span className="val">{fmtNum(f)} একক</span></label>
-          <input type="range" min={20} max={150} value={fMag} onChange={(e) => setFMag(+e.target.value)} />
-        </div>
-        {positionIndicator && <span className="pos-indicator bn">{positionIndicator}</span>}
-      </div>
-
-      <div className="ro-card">
-        <div className="presets">
-          {presets.map((p, i) => (
-            <button key={i} className="preset-btn" onClick={() => setUMag(Math.max(5, Math.min(350, p.calc())))}>
-              {p.label}
-            </button>
-          ))}
+        <div className="experiment-controls">
+          <div className="ro-card">
+            <div className="slider-row">
+              <label><span>বস্তুর দূরত্ব (u)</span><span className="val">{fmtNum(u)} একক</span></label>
+              <input type="range" min={5} max={350} value={uMag} onChange={(e) => setUMag(+e.target.value)} />
+            </div>
+            <div className="slider-row">
+              <label><span>ফোকাস দূরত্ব (f)</span><span className="val">{fmtNum(f)} একক</span></label>
+              <input type="range" min={20} max={150} value={fMag} onChange={(e) => setFMag(+e.target.value)} />
+            </div>
+            {positionIndicator && <span className="pos-indicator bn">{positionIndicator}</span>}
+          </div>
+          <div className="ro-card">
+            <div className="presets">
+              {presets.map((p, i) => (
+                <button key={i} className="preset-btn" onClick={() => setUMag(Math.max(5, Math.min(350, p.calc())))}>
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1650,6 +1654,11 @@ const styles = `
 .ro-header h1 { font-size: 16px; font-weight: 700; margin: 0; }
 .ro-header p { font-size: 11px; color: var(--gray-500); margin: 2px 0 0; font-family: 'Inter',sans-serif; }
 .ro-card { background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 12px; }
+.experiment-row { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+@media (min-width: 768px) { .experiment-row { flex-direction: row; } }
+.experiment-canvas { flex: 1; min-width: 0; }
+.experiment-controls { flex: 0 0 auto; width: 100%; }
+@media (min-width: 768px) { .experiment-controls { width: 260px; } }
 .canvas-card { padding: 10px; }
 .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .tab-btn { padding: 10px 8px; border: 1px solid var(--border); background: #fff; border-radius: 10px; font-weight: 600; font-size: 13px; color: var(--gray-600); cursor: pointer; transition: all 180ms; min-height: 44px; font-family: inherit; }
