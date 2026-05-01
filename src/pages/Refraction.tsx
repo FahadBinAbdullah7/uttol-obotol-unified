@@ -185,12 +185,40 @@ const Refraction = () => {
       );
 
       // Angle labels
-      ctx.fillStyle = "rgba(255,255,255,0.7)";
-      ctx.font = "12px Inter, sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      ctx.font = "bold 13px Inter, sans-serif";
       ctx.textAlign = "right";
       ctx.fillText(`i = ${angleDeg}°`, entryX - 8, entryY - 8);
       ctx.textAlign = "left";
       ctx.fillText(`r = ${((theta2 * 180) / Math.PI).toFixed(1)}°`, entryX + 8, entryY + 18);
+
+      // === FORMULA HUD (top-left) ===
+      const sinI = Math.sin(theta1);
+      const sinR = Math.sin(theta2);
+      const rDeg = (theta2 * 180) / Math.PI;
+      const hudX = 16, hudY = 16, hudW = 300, hudH = 138;
+      ctx.save();
+      ctx.fillStyle = "rgba(0,0,0,0.6)";
+      ctx.strokeStyle = "rgba(255,255,255,0.15)";
+      ctx.lineWidth = 1;
+      roundRect(ctx, hudX, hudY, hudW, hudH, 10);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "rgba(255,235,150,0.95)";
+      ctx.font = "bold 13px Inter, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("স্নেলের সূত্র · Snell's Law", hudX + 12, hudY + 22);
+      ctx.fillStyle = "rgba(255,255,255,0.95)";
+      ctx.font = "13px ui-monospace, SFMono-Regular, monospace";
+      ctx.fillText("n₁·sin(i) = n₂·sin(r)", hudX + 12, hudY + 44);
+      ctx.fillStyle = "rgba(180,220,255,0.95)";
+      ctx.fillText(`1.00·sin(${angleDeg}°) = ${n.toFixed(2)}·sin(${rDeg.toFixed(1)}°)`, hudX + 12, hudY + 64);
+      ctx.fillText(`${sinI.toFixed(3)}  =  ${(n * sinR).toFixed(3)}`, hudX + 12, hudY + 82);
+      ctx.fillStyle = "rgba(255,160,200,0.95)";
+      ctx.font = "12px ui-monospace, monospace";
+      ctx.fillText("পার্শ্বিক সরণ  d = t·sin(i−r)/cos(r)", hudX + 12, hudY + 104);
+      ctx.fillStyle = "rgba(255,255,255,0.95)";
+      ctx.fillText(`d = ${thickness}·sin(${(angleDeg - rDeg).toFixed(1)}°)/cos(${rDeg.toFixed(1)}°) ≈ ${shift.toFixed(1)} px`, hudX + 12, hudY + 122);
+      ctx.restore();
     };
 
     const drawPrism = (ctx: CanvasRenderingContext2D, W: number, H: number) => {
