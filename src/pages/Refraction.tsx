@@ -380,23 +380,41 @@ const Refraction = () => {
       const theta_i_deg = angBetween(negInc, nLeft);
       const perColorDeviation: number[] = [];
 
+      // Intersect a ray (origin O, dir D) with segment A→B; return s>0 if it hits, plus normal of that face.
+      const intersectSeg = (
+        O: { x: number; y: number },
+        D: { x: number; y: number },
+        A: { x: number; y: number },
+        B: { x: number; y: number }
+      ) => {
+        const ex = B.x - A.x, ey = B.y - A.y;
+        const denom = D.x * ey - D.y * ex;
+        if (Math.abs(denom) < 1e-9) return null;
+        const s = ((A.x - O.x) * ey - (A.y - O.y) * ex) / denom;
+        const t = ((A.x - O.x) * D.y - (A.y - O.y) * D.x) / denom;
+        if (s > 1e-4 && t >= -1e-4 && t <= 1 + 1e-4) return s;
+        return null;
+      };
+
       SPECTRUM.forEach((c, idx) => {
         const dIn = refract(incDir, nLeft, 1 / c.n);
-        if (idx === 0 && tRef.current % 60 === 0) {
-          console.log("[prism]", { incDir, nLeft, nRight, dIn, n: c.n });
-        }
         if (!dIn) { perColorDeviation.push(0); return; }
 
-        const rfx = right.x - apex.x;
-        const rfy = right.y - apex.y;
-        const denom = dIn.x * rfy - dIn.y * rfx;
-        const s = ((apex.x - hit.x) * rfy - (apex.y - hit.y) * rfx) / denom;
+        // Find first exit face (right or bottom; not the entry face)
+        const sR = intersectSeg(hit, dIn, apex, right);
+        const sB = intersectSeg(hit, dIn, left, right);
+        let s: number | null = null;
+        let exitNormal = nRight;
+        if (sR !== null && (sB === null || sR < sB)) { s = sR; exitNormal = nRight; }
+        else if (sB !== null) { s = sB; exitNormal = outwardNormal(left, right); }
+        if (s === null) { perColorDeviation.push(0); return; }
+
         const exitX = hit.x + s * dIn.x;
         const exitY = hit.y + s * dIn.y;
 
-        const dOut = refract(dIn, nRight, c.n);
+        const dOut = refract(dIn, exitNormal, c.n);
         if (idx === 0 && tRef.current % 60 === 0) {
-          console.log("[prism exit]", { exitX, exitY, s, dOut });
+          console.log("[prism exit]", { sR, sB, exitX, exitY, dOut });
         }
         if (!dOut) { perColorDeviation.push(0); return; }
 
