@@ -303,54 +303,77 @@ const Refraction = () => {
       ctx.fillText("সাদা আলো (white light)", (inStart.x + hit.x) / 2, (inStart.y + hit.y) / 2 - 14);
       ctx.restore();
 
-      // Direction of incoming ray
-      const inAngle = Math.atan2(hit.y - inStart.y, hit.x - inStart.x);
+      // === Vector-form Snell's law refraction ===
+      const idx0 = hit.x - inStart.x;
+      const idy0 = hit.y - inStart.y;
+      const ilen = Math.hypot(idx0, idy0);
+      const incDir = { x: idx0 / ilen, y: idy0 / ilen };
 
-      // Left face normal (outward)
-      const leftFaceAngle = Math.atan2(left.y - apex.y, left.x - apex.x);
-      const leftNormal = leftFaceAngle - Math.PI / 2;
+      const centroid = {
+        x: (apex.x + left.x + right.x) / 3,
+        y: (apex.y + left.y + right.y) / 3,
+      };
+      const outwardNormal = (a: { x: number; y: number }, b: { x: number; y: number }) => {
+        const ex = b.x - a.x, ey = b.y - a.y;
+        const cand = { x: -ey, y: ex };
+        const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        const toC = { x: centroid.x - mid.x, y: centroid.y - mid.y };
+        const dot = cand.x * toC.x + cand.y * toC.y;
+        const nn = dot < 0 ? cand : { x: ey, y: -ex };
+        const L = Math.hypot(nn.x, nn.y);
+        return { x: nn.x / L, y: nn.y / L };
+      };
+      const nLeft = outwardNormal(apex, left);
+      const nRight = outwardNormal(apex, right);
 
-      // Angle of incidence relative to inward normal
-      const inwardNormal = leftNormal + Math.PI;
-      let theta_i = inAngle - inwardNormal;
-      theta_i = Math.atan2(Math.sin(theta_i), Math.cos(theta_i));
+      const refract = (
+        d: { x: number; y: number },
+        nOut: { x: number; y: number },
+        eta: number
+      ) => {
+        let n = nOut;
+        let cosI = -(d.x * n.x + d.y * n.y);
+        if (cosI < 0) { n = { x: -n.x, y: -n.y }; cosI = -cosI; }
+        const sin2T = eta * eta * (1 - cosI * cosI);
+        if (sin2T > 1) return null;
+        const cosT = Math.sqrt(1 - sin2T);
+        return {
+          x: eta * d.x + (eta * cosI - cosT) * n.x,
+          y: eta * d.y + (eta * cosI - cosT) * n.y,
+        };
+      };
 
-      const rightFaceAngle = Math.atan2(right.y - apex.y, right.x - apex.x);
-      const rightNormalOut = rightFaceAngle + Math.PI / 2;
+      const angBetween = (a: { x: number; y: number }, b: { x: number; y: number }) => {
+        const dot = Math.max(-1, Math.min(1, a.x * b.x + a.y * b.y));
+        return (Math.acos(dot) * 180) / Math.PI;
+      };
 
+      const negInc = { x: -incDir.x, y: -incDir.y };
+      const theta_i_deg = angBetween(negInc, nLeft);
       const perColorDeviation: number[] = [];
 
-      SPECTRUM.forEach((c, idx) => {
-        const sinR = Math.sin(theta_i) / c.n;
-        const theta_r = Math.asin(Math.max(-1, Math.min(1, sinR)));
-        const dirInside = inwardNormal + theta_r;
+      SPECTRUM.forEach((c) => {
+        const dIn = refract(incDir, nLeft, 1 / c.n);
+        if (!dIn) { perColorDeviation.push(0); return; }
 
-        const dx = Math.cos(dirInside);
-        const dy = Math.sin(dirInside);
         const rfx = right.x - apex.x;
         const rfy = right.y - apex.y;
-        const denom = dx * rfy - dy * rfx;
+        const denom = dIn.x * rfy - dIn.y * rfx;
         const s = ((apex.x - hit.x) * rfy - (apex.y - hit.y) * rfx) / denom;
-        const exitX = hit.x + s * dx;
-        const exitY = hit.y + s * dy;
+        const exitX = hit.x + s * dIn.x;
+        const exitY = hit.y + s * dIn.y;
 
-        const rightInwardNormal = rightNormalOut + Math.PI;
-        let theta_i2 = dirInside - rightInwardNormal;
-        theta_i2 = Math.atan2(Math.sin(theta_i2), Math.cos(theta_i2));
-        const sinO = c.n * Math.sin(theta_i2);
-        const clamped = Math.max(-1, Math.min(1, sinO));
-        const theta_o = Math.asin(clamped);
-        const dirOut = rightNormalOut + theta_o;
+        const dOut = refract(dIn, nRight, c.n);
+        if (!dOut) { perColorDeviation.push(0); return; }
 
-        const outLen = 320 + idx * 8;
-        const outEndX = exitX + Math.cos(dirOut) * outLen;
-        const outEndY = exitY + Math.sin(dirOut) * outLen;
+        const outLen = 360;
+        const outEndX = exitX + dOut.x * outLen;
+        const outEndY = exitY + dOut.y * outLen;
 
-        // Total deviation δ ≈ (i - r) + (i2 - o)  (in degrees)
-        const dev = Math.abs((theta_i - theta_r) + (theta_i2 - theta_o)) * 180 / Math.PI;
+        const dev = angBetween(incDir, dOut);
         perColorDeviation.push(dev);
 
-        // Inside ray (colored, brighter)
+        // Inside colored ray
         ctx.save();
         ctx.shadowColor = c.color;
         ctx.shadowBlur = 10;
@@ -362,10 +385,10 @@ const Refraction = () => {
         ctx.stroke();
         ctx.restore();
 
-        // Outgoing colored ray — solid bright core + glow halo
+        // Outgoing colored ray
         ctx.save();
         ctx.shadowColor = c.color;
-        ctx.shadowBlur = 22;
+        ctx.shadowBlur = 24;
         ctx.strokeStyle = c.color;
         ctx.lineWidth = 3.2;
         ctx.beginPath();
@@ -374,7 +397,6 @@ const Refraction = () => {
         ctx.stroke();
         ctx.restore();
 
-        // Animated travelling dot along the outgoing ray
         if (animate) {
           const px = exitX + (outEndX - exitX) * tNorm;
           const py = exitY + (outEndY - exitY) * tNorm;
