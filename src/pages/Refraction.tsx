@@ -267,10 +267,9 @@ const Refraction = () => {
       ctx.stroke();
       ctx.restore();
 
-      // Incoming white ray hits left face midpoint at a steep angle
-      // (chosen so the ray exits the right face without total internal reflection)
+      // Hit point on left face midpoint. Incoming ray direction is computed
+      // from the user-controlled angle of incidence (relative to the face normal).
       const hit = { x: (apex.x + left.x) / 2, y: (apex.y + left.y) / 2 };
-      const inStart = { x: hit.x - 240, y: hit.y - 140 };
 
       const dashOffset = animate ? -(tRef.current * 0.08) : 0;
       const tNorm = (Math.sin(tRef.current * 0.04) + 1) / 2; // 0..1 pulse for travelling dots
