@@ -380,8 +380,11 @@ const Refraction = () => {
       const theta_i_deg = angBetween(negInc, nLeft);
       const perColorDeviation: number[] = [];
 
-      SPECTRUM.forEach((c) => {
+      SPECTRUM.forEach((c, idx) => {
         const dIn = refract(incDir, nLeft, 1 / c.n);
+        if (idx === 0 && tRef.current % 60 === 0) {
+          console.log("[prism]", { incDir, nLeft, nRight, dIn, n: c.n });
+        }
         if (!dIn) { perColorDeviation.push(0); return; }
 
         const rfx = right.x - apex.x;
@@ -392,6 +395,9 @@ const Refraction = () => {
         const exitY = hit.y + s * dIn.y;
 
         const dOut = refract(dIn, nRight, c.n);
+        if (idx === 0 && tRef.current % 60 === 0) {
+          console.log("[prism exit]", { exitX, exitY, s, dOut });
+        }
         if (!dOut) { perColorDeviation.push(0); return; }
 
         const outLen = 360;
