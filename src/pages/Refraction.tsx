@@ -525,7 +525,7 @@ const Refraction = () => {
   return (
     <div className="min-h-screen bg-[#0a0a18] text-white">
       <SiteNav />
-      <header className="pt-20 pb-4 text-center px-4">
+      <header className="pt-6 pb-4 text-center px-4">
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
           আলোর প্রতিসরণ ও বিচ্ছুরণ
         </h1>
