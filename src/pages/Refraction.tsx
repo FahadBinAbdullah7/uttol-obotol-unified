@@ -267,12 +267,46 @@ const Refraction = () => {
       ctx.stroke();
       ctx.restore();
 
-      // Hit point on left face midpoint. Incoming ray direction is computed
-      // from the user-controlled angle of incidence (relative to the face normal).
+      // Hit point on left face midpoint.
       const hit = { x: (apex.x + left.x) / 2, y: (apex.y + left.y) / 2 };
 
       const dashOffset = animate ? -(tRef.current * 0.08) : 0;
-      const tNorm = (Math.sin(tRef.current * 0.04) + 1) / 2; // 0..1 pulse for travelling dots
+      const tNorm = (Math.sin(tRef.current * 0.04) + 1) / 2;
+
+      // === Geometry helpers (centroid, outward normals) ===
+      const centroid = {
+        x: (apex.x + left.x + right.x) / 3,
+        y: (apex.y + left.y + right.y) / 3,
+      };
+      const outwardNormal = (a: { x: number; y: number }, b: { x: number; y: number }) => {
+        const ex = b.x - a.x, ey = b.y - a.y;
+        const cand = { x: -ey, y: ex };
+        const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        const toC = { x: centroid.x - mid.x, y: centroid.y - mid.y };
+        const dot = cand.x * toC.x + cand.y * toC.y;
+        const nn = dot < 0 ? cand : { x: ey, y: -ex };
+        const L = Math.hypot(nn.x, nn.y);
+        return { x: nn.x / L, y: nn.y / L };
+      };
+      const nLeft = outwardNormal(apex, left);
+      const nRight = outwardNormal(apex, right);
+
+      // Build incoming direction from user-controlled angle of incidence (angleDeg).
+      // Rotate the inward-normal vector by +angleDeg (around hit point), then negate
+      // to get the propagation direction toward the surface.
+      const inwardN = { x: -nLeft.x, y: -nLeft.y };
+      const aRad = (angleDeg * Math.PI) / 180;
+      const cosA = Math.cos(aRad);
+      const sinA = Math.sin(aRad);
+      // Rotate inwardN by +angleDeg → this is the direction FROM hit point back along the source ray
+      // So propagation direction is the negation.
+      const backDir = {
+        x: cosA * (-inwardN.x) - sinA * (-inwardN.y),
+        y: sinA * (-inwardN.x) + cosA * (-inwardN.y),
+      };
+      const incDir = { x: -backDir.x, y: -backDir.y };
+      const inLen = 240;
+      const inStart = { x: hit.x + backDir.x * inLen, y: hit.y + backDir.y * inLen };
 
       // Bright white incoming beam (core + outer glow halo)
       ctx.save();
@@ -295,19 +329,27 @@ const Refraction = () => {
       ctx.stroke();
       ctx.restore();
 
+      // Normal line at hit point (dashed)
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,0.35)";
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(hit.x - nLeft.x * 60, hit.y - nLeft.y * 60);
+      ctx.lineTo(hit.x + nLeft.x * 60, hit.y + nLeft.y * 60);
+      ctx.stroke();
+      ctx.restore();
+
       // "সাদা আলো" label on incoming beam
       ctx.save();
       ctx.fillStyle = "rgba(255,255,255,0.9)";
       ctx.font = "bold 12px Inter, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("সাদা আলো (white light)", (inStart.x + hit.x) / 2, (inStart.y + hit.y) / 2 - 14);
+      ctx.fillText(
+        "সাদা আলো (white light)",
+        (inStart.x + hit.x) / 2,
+        (inStart.y + hit.y) / 2 - 14
+      );
       ctx.restore();
-
-      // === Vector-form Snell's law refraction ===
-      const idx0 = hit.x - inStart.x;
-      const idy0 = hit.y - inStart.y;
-      const ilen = Math.hypot(idx0, idy0);
-      const incDir = { x: idx0 / ilen, y: idy0 / ilen };
 
       const centroid = {
         x: (apex.x + left.x + right.x) / 3,
