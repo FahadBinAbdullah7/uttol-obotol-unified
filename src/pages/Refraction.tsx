@@ -396,11 +396,10 @@ const Refraction = () => {
         return null;
       };
 
-      SPECTRUM.forEach((c, idx) => {
+      SPECTRUM.forEach((c) => {
         const dIn = refract(incDir, nLeft, 1 / c.n);
         if (!dIn) { perColorDeviation.push(0); return; }
 
-        // Find first exit face (right or bottom; not the entry face)
         const sR = intersectSeg(hit, dIn, apex, right);
         const sB = intersectSeg(hit, dIn, left, right);
         let s: number | null = null;
@@ -413,9 +412,6 @@ const Refraction = () => {
         const exitY = hit.y + s * dIn.y;
 
         const dOut = refract(dIn, exitNormal, c.n);
-        if (idx === 0 && tRef.current % 60 === 0) {
-          console.log("[prism exit]", { sR, sB, exitX, exitY, dOut });
-        }
         if (!dOut) { perColorDeviation.push(0); return; }
 
         const outLen = 360;
