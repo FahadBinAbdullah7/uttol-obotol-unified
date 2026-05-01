@@ -351,22 +351,8 @@ const Refraction = () => {
       );
       ctx.restore();
 
-      const centroid = {
-        x: (apex.x + left.x + right.x) / 3,
-        y: (apex.y + left.y + right.y) / 3,
-      };
-      const outwardNormal = (a: { x: number; y: number }, b: { x: number; y: number }) => {
-        const ex = b.x - a.x, ey = b.y - a.y;
-        const cand = { x: -ey, y: ex };
-        const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-        const toC = { x: centroid.x - mid.x, y: centroid.y - mid.y };
-        const dot = cand.x * toC.x + cand.y * toC.y;
-        const nn = dot < 0 ? cand : { x: ey, y: -ex };
-        const L = Math.hypot(nn.x, nn.y);
-        return { x: nn.x / L, y: nn.y / L };
-      };
-      const nLeft = outwardNormal(apex, left);
-      const nRight = outwardNormal(apex, right);
+      // (centroid / outwardNormal / nLeft / nRight already defined above)
+
 
       const refract = (
         d: { x: number; y: number },
