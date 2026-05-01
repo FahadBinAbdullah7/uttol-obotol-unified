@@ -343,8 +343,9 @@ export default function RayOptics() {
     const bot = cy + elemHeight / 2;
 
     if (isLens) {
-      const bulge = mode === "convexLens" ? 12 : -12;
-      const grad = ctx.createLinearGradient(cx - 20, 0, cx + 20, 0);
+      const isConvex = mode === "convexLens";
+      const bulge = 14;
+      const grad = ctx.createLinearGradient(cx - 24, 0, cx + 24, 0);
       grad.addColorStop(0, "rgba(120,180,255,0.15)");
       grad.addColorStop(0.5, "rgba(180,220,255,0.35)");
       grad.addColorStop(1, "rgba(120,180,255,0.15)");
@@ -352,9 +353,22 @@ export default function RayOptics() {
       ctx.strokeStyle = "rgba(180,220,255,0.85)";
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(cx, top);
-      ctx.quadraticCurveTo(cx - bulge, cy, cx, bot);
-      ctx.quadraticCurveTo(cx + bulge, cy, cx, top);
+      if (isConvex) {
+        // Biconvex: both surfaces bulge outward
+        ctx.moveTo(cx, top);
+        ctx.quadraticCurveTo(cx + bulge, cy, cx, bot);
+        ctx.quadraticCurveTo(cx - bulge, cy, cx, top);
+      } else {
+        // Biconcave: thick edges, thin middle. Outline is a rectangle whose
+        // left and right sides curve INWARD toward the optical axis.
+        const halfW = bulge + 4; // edge thickness
+        ctx.moveTo(cx - halfW, top);
+        ctx.lineTo(cx + halfW, top);
+        ctx.quadraticCurveTo(cx + halfW - bulge * 1.6, cy, cx + halfW, bot);
+        ctx.lineTo(cx - halfW, bot);
+        ctx.quadraticCurveTo(cx - halfW + bulge * 1.6, cy, cx - halfW, top);
+      }
+      ctx.closePath();
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = "rgba(180,220,255,0.85)";
