@@ -43,7 +43,9 @@ const STYLES = `
   --border: #E5E7EB; --bg: #FFFFFF; --surface: #F9FAFB;
   --info-soft: #D8F3FF;
 }
-.ref-root { font-family: 'Hind Siliguri','Inter',sans-serif; color: var(--ten-ink); background: var(--surface); min-height: 100vh; padding: 12px; box-sizing: border-box; line-height: 1.5; max-width: 540px; margin: 0 auto; }
+.ref-root { font-family: 'Hind Siliguri','Inter',sans-serif; color: var(--ten-ink); background: var(--surface); min-height: 100vh; padding: 16px; box-sizing: border-box; line-height: 1.5; max-width: 361px; margin: 0 auto; }
+@media (min-width: 768px) { .ref-root { max-width: 720px; padding: 24px; } }
+@media (min-width: 1440px) { .ref-root { max-width: 1216px; } }
 .ref-root *, .ref-root *::before, .ref-root *::after { box-sizing: border-box; }
 .ref-header { background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; border-top: 4px solid var(--ten-red); display: flex; align-items: center; gap: 12px; }
 .ref-header .icon { width: 40px; height: 40px; background: #FFF5F6; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
@@ -55,7 +57,7 @@ const STYLES = `
 .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .tab-btn { padding: 10px 8px; border: 1px solid var(--border); background: #fff; border-radius: 10px; font-weight: 600; font-size: 13px; color: var(--gray-600); cursor: pointer; transition: all 180ms; min-height: 44px; font-family: inherit; }
 .tab-btn.active { border-color: var(--ten-red); background: #FFF5F6; color: var(--ten-red); box-shadow: 0 0 0 3px rgba(232,0,29,0.08); }
-.canvas-wrap { position: relative; width: 100%; background: #0B1220; border-radius: 12px; overflow: hidden; }
+.canvas-wrap { position: relative; width: 100%; background: #0B1220; border-radius: 12px; overflow: auto; max-height: 70vh; }
 .canvas-wrap canvas { display: block; width: 100%; }
 .action-row { display: flex; gap: 8px; margin-top: 10px; }
 .anim-btn { flex: 1; min-height: 48px; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--success-dark); background: var(--success); color: #fff; font-weight: 700; font-size: 15px; font-family: inherit; cursor: pointer; transition: all 180ms; box-shadow: 0 2px 8px rgba(28,171,85,0.25); display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -638,7 +640,7 @@ const Refraction = () => {
 
         <div className="ref-card canvas-card">
           <div className="canvas-wrap">
-            <canvas ref={canvasRef} className="block w-full" style={{ height: 420 }} />
+            <canvas ref={canvasRef} className="block w-full" style={{ height: 560 }} />
           </div>
           <div className="action-row">
             <button

@@ -1641,7 +1641,9 @@ const styles = `
   --border: #E5E7EB; --bg: #FFFFFF; --surface: #F9FAFB;
   --info-soft: #D8F3FF;
 }
-.ro-root { font-family: 'Hind Siliguri','Inter',sans-serif; color: var(--ten-ink); background: var(--surface); min-height: 100vh; padding: 12px; box-sizing: border-box; line-height: 1.5; max-width: 540px; margin: 0 auto; }
+.ro-root { font-family: 'Hind Siliguri','Inter',sans-serif; color: var(--ten-ink); background: var(--surface); min-height: 100vh; padding: 16px; box-sizing: border-box; line-height: 1.5; max-width: 361px; margin: 0 auto; }
+@media (min-width: 768px) { .ro-root { max-width: 720px; padding: 24px; } }
+@media (min-width: 1440px) { .ro-root { max-width: 1216px; } }
 .ro-root *, .ro-root *::before, .ro-root *::after { box-sizing: border-box; }
 .ro-header { background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; border-top: 4px solid var(--ten-red); display: flex; align-items: center; gap: 12px; }
 .ro-header .icon { width: 40px; height: 40px; background: #FFF5F6; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--ten-red); }
