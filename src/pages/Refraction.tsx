@@ -267,9 +267,10 @@ const Refraction = () => {
       ctx.stroke();
       ctx.restore();
 
-      // Incoming white ray hits left face midpoint
+      // Incoming white ray hits left face midpoint at a steep angle
+      // (chosen so the ray exits the right face without total internal reflection)
       const hit = { x: (apex.x + left.x) / 2, y: (apex.y + left.y) / 2 };
-      const inStart = { x: hit.x - 220, y: hit.y - 30 };
+      const inStart = { x: hit.x - 240, y: hit.y - 140 };
 
       const dashOffset = animate ? -(tRef.current * 0.08) : 0;
       const tNorm = (Math.sin(tRef.current * 0.04) + 1) / 2; // 0..1 pulse for travelling dots
