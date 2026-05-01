@@ -4,14 +4,32 @@ import SiteNav from "@/components/SiteNav";
 type Mode = "slab" | "prism";
 
 const SPECTRUM = [
-  { name: "বেগুনি", color: "#8B00FF", n: 1.532 },
-  { name: "নীল", color: "#4B0082", n: 1.528 },
-  { name: "আসমানী", color: "#0000FF", n: 1.525 },
-  { name: "সবুজ", color: "#00CC00", n: 1.519 },
-  { name: "হলুদ", color: "#FFD700", n: 1.517 },
-  { name: "কমলা", color: "#FF8C00", n: 1.514 },
-  { name: "লাল", color: "#FF0000", n: 1.510 },
+  { name: "বেগুনি", en: "Violet", color: "#B14BFF", n: 1.532 },
+  { name: "নীল", en: "Indigo", color: "#6A5BFF", n: 1.528 },
+  { name: "আসমানী", en: "Blue", color: "#3DA5FF", n: 1.525 },
+  { name: "সবুজ", en: "Green", color: "#3BFF6B", n: 1.519 },
+  { name: "হলুদ", en: "Yellow", color: "#FFE234", n: 1.517 },
+  { name: "কমলা", en: "Orange", color: "#FF9A2E", n: 1.514 },
+  { name: "লাল", en: "Red", color: "#FF3B3B", n: 1.510 },
 ];
+
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+) {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
 
 const Refraction = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -185,12 +203,40 @@ const Refraction = () => {
       );
 
       // Angle labels
-      ctx.fillStyle = "rgba(255,255,255,0.7)";
-      ctx.font = "12px Inter, sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      ctx.font = "bold 13px Inter, sans-serif";
       ctx.textAlign = "right";
       ctx.fillText(`i = ${angleDeg}°`, entryX - 8, entryY - 8);
       ctx.textAlign = "left";
       ctx.fillText(`r = ${((theta2 * 180) / Math.PI).toFixed(1)}°`, entryX + 8, entryY + 18);
+
+      // === FORMULA HUD (top-left) ===
+      const sinI = Math.sin(theta1);
+      const sinR = Math.sin(theta2);
+      const rDeg = (theta2 * 180) / Math.PI;
+      const hudX = 16, hudY = 16, hudW = 300, hudH = 138;
+      ctx.save();
+      ctx.fillStyle = "rgba(0,0,0,0.6)";
+      ctx.strokeStyle = "rgba(255,255,255,0.15)";
+      ctx.lineWidth = 1;
+      roundRect(ctx, hudX, hudY, hudW, hudH, 10);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "rgba(255,235,150,0.95)";
+      ctx.font = "bold 13px Inter, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("স্নেলের সূত্র · Snell's Law", hudX + 12, hudY + 22);
+      ctx.fillStyle = "rgba(255,255,255,0.95)";
+      ctx.font = "13px ui-monospace, SFMono-Regular, monospace";
+      ctx.fillText("n₁·sin(i) = n₂·sin(r)", hudX + 12, hudY + 44);
+      ctx.fillStyle = "rgba(180,220,255,0.95)";
+      ctx.fillText(`1.00·sin(${angleDeg}°) = ${n.toFixed(2)}·sin(${rDeg.toFixed(1)}°)`, hudX + 12, hudY + 64);
+      ctx.fillText(`${sinI.toFixed(3)}  =  ${(n * sinR).toFixed(3)}`, hudX + 12, hudY + 82);
+      ctx.fillStyle = "rgba(255,160,200,0.95)";
+      ctx.font = "12px ui-monospace, monospace";
+      ctx.fillText("পার্শ্বিক সরণ  d = t·sin(i−r)/cos(r)", hudX + 12, hudY + 104);
+      ctx.fillStyle = "rgba(255,255,255,0.95)";
+      ctx.fillText(`d = ${thickness}·sin(${(angleDeg - rDeg).toFixed(1)}°)/cos(${rDeg.toFixed(1)}°) ≈ ${shift.toFixed(1)} px`, hudX + 12, hudY + 122);
+      ctx.restore();
     };
 
     const drawPrism = (ctx: CanvasRenderingContext2D, W: number, H: number) => {
@@ -221,19 +267,61 @@ const Refraction = () => {
       ctx.stroke();
       ctx.restore();
 
-      // Incoming white ray hits left face midpoint
+      // Hit point on left face midpoint.
       const hit = { x: (apex.x + left.x) / 2, y: (apex.y + left.y) / 2 };
-      const inStart = { x: hit.x - 220, y: hit.y - 30 };
 
-      const dashOffset = animate ? -(tRef.current * 0.06) : 0;
+      const dashOffset = animate ? -(tRef.current * 0.08) : 0;
+      const tNorm = (Math.sin(tRef.current * 0.04) + 1) / 2;
 
-      // White incoming ray with subtle glow
+      // === Geometry helpers (centroid, outward normals) ===
+      const centroid = {
+        x: (apex.x + left.x + right.x) / 3,
+        y: (apex.y + left.y + right.y) / 3,
+      };
+      const outwardNormal = (a: { x: number; y: number }, b: { x: number; y: number }) => {
+        const ex = b.x - a.x, ey = b.y - a.y;
+        const cand = { x: -ey, y: ex };
+        const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        const toC = { x: centroid.x - mid.x, y: centroid.y - mid.y };
+        const dot = cand.x * toC.x + cand.y * toC.y;
+        const nn = dot < 0 ? cand : { x: ey, y: -ex };
+        const L = Math.hypot(nn.x, nn.y);
+        return { x: nn.x / L, y: nn.y / L };
+      };
+      const nLeft = outwardNormal(apex, left);
+      const nRight = outwardNormal(apex, right);
+
+      // Build incoming direction from user-controlled angle of incidence (angleDeg).
+      // Rotate the inward-normal vector by +angleDeg (around hit point), then negate
+      // to get the propagation direction toward the surface.
+      const inwardN = { x: -nLeft.x, y: -nLeft.y };
+      const aRad = (angleDeg * Math.PI) / 180;
+      const cosA = Math.cos(aRad);
+      const sinA = Math.sin(aRad);
+      // Rotate inwardN by +angleDeg → this is the direction FROM hit point back along the source ray
+      // So propagation direction is the negation.
+      const backDir = {
+        x: cosA * (-inwardN.x) - sinA * (-inwardN.y),
+        y: sinA * (-inwardN.x) + cosA * (-inwardN.y),
+      };
+      const incDir = { x: -backDir.x, y: -backDir.y };
+      const inLen = 240;
+      const inStart = { x: hit.x + backDir.x * inLen, y: hit.y + backDir.y * inLen };
+
+      // Bright white incoming beam (core + outer glow halo)
       ctx.save();
-      ctx.shadowColor = "rgba(255,255,255,0.85)";
-      ctx.shadowBlur = 16;
-      ctx.strokeStyle = "rgba(255,255,255,0.95)";
-      ctx.lineWidth = 3;
-      ctx.setLineDash([10, 6]);
+      ctx.shadowColor = "rgba(255,255,255,0.95)";
+      ctx.shadowBlur = 24;
+      ctx.strokeStyle = "rgba(255,255,255,0.55)";
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.moveTo(inStart.x, inStart.y);
+      ctx.lineTo(hit.x, hit.y);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = "rgba(255,255,255,1)";
+      ctx.lineWidth = 2.4;
+      ctx.setLineDash([12, 6]);
       ctx.lineDashOffset = dashOffset;
       ctx.beginPath();
       ctx.moveTo(inStart.x, inStart.y);
@@ -241,98 +329,185 @@ const Refraction = () => {
       ctx.stroke();
       ctx.restore();
 
-      // Direction of incoming ray
-      const inAngle = Math.atan2(hit.y - inStart.y, hit.x - inStart.x);
+      // Normal line at hit point (dashed)
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,0.35)";
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(hit.x - nLeft.x * 60, hit.y - nLeft.y * 60);
+      ctx.lineTo(hit.x + nLeft.x * 60, hit.y + nLeft.y * 60);
+      ctx.stroke();
+      ctx.restore();
 
-      // Left face normal (outward)
-      const leftFaceAngle = Math.atan2(left.y - apex.y, left.x - apex.x);
-      const leftNormal = leftFaceAngle - Math.PI / 2;
+      // "সাদা আলো" label on incoming beam
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      ctx.font = "bold 12px Inter, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        "সাদা আলো (white light)",
+        (inStart.x + hit.x) / 2,
+        (inStart.y + hit.y) / 2 - 14
+      );
+      ctx.restore();
 
-      // Angle of incidence relative to inward normal
-      const inwardNormal = leftNormal + Math.PI;
-      let theta_i = inAngle - inwardNormal;
-      // Wrap to [-PI, PI]
-      theta_i = Math.atan2(Math.sin(theta_i), Math.cos(theta_i));
+      // (centroid / outwardNormal / nLeft / nRight already defined above)
 
-      // For each color, refract at left face, traverse to right face, refract out
-      // Right face direction & normal
-      const rightFaceAngle = Math.atan2(right.y - apex.y, right.x - apex.x);
-      const rightNormalOut = rightFaceAngle + Math.PI / 2; // outward (to the right)
 
-      SPECTRUM.forEach((c, idx) => {
-        const sinR = Math.sin(theta_i) / c.n;
-        const theta_r = Math.asin(Math.max(-1, Math.min(1, sinR)));
-        const dirInside = inwardNormal + theta_r;
+      const refract = (
+        d: { x: number; y: number },
+        nOut: { x: number; y: number },
+        eta: number
+      ) => {
+        let n = nOut;
+        let cosI = -(d.x * n.x + d.y * n.y);
+        if (cosI < 0) { n = { x: -n.x, y: -n.y }; cosI = -cosI; }
+        const sin2T = eta * eta * (1 - cosI * cosI);
+        if (sin2T > 1) return null;
+        const cosT = Math.sqrt(1 - sin2T);
+        return {
+          x: eta * d.x + (eta * cosI - cosT) * n.x,
+          y: eta * d.y + (eta * cosI - cosT) * n.y,
+        };
+      };
 
-        // March from hit point in dirInside until intersect right face line
-        const dx = Math.cos(dirInside);
-        const dy = Math.sin(dirInside);
-        // Right face parametric: P = apex + t*(right - apex), t in [0,1]
-        const rfx = right.x - apex.x;
-        const rfy = right.y - apex.y;
-        // Solve: hit + s*(dx,dy) = apex + t*(rfx,rfy)
-        const denom = dx * rfy - dy * rfx;
-        const s = ((apex.x - hit.x) * rfy - (apex.y - hit.y) * rfx) / denom;
-        const exitX = hit.x + s * dx;
-        const exitY = hit.y + s * dy;
+      const angBetween = (a: { x: number; y: number }, b: { x: number; y: number }) => {
+        const dot = Math.max(-1, Math.min(1, a.x * b.x + a.y * b.y));
+        return (Math.acos(dot) * 180) / Math.PI;
+      };
 
-        // Refract out at right face: n -> 1
-        // Angle of incidence inside relative to inward normal of right face
-        const rightInwardNormal = rightNormalOut + Math.PI;
-        let theta_i2 = dirInside - rightInwardNormal;
-        theta_i2 = Math.atan2(Math.sin(theta_i2), Math.cos(theta_i2));
-        const sinO = c.n * Math.sin(theta_i2);
-        const clamped = Math.max(-1, Math.min(1, sinO));
-        const theta_o = Math.asin(clamped);
-        const dirOut = rightNormalOut + theta_o;
+      const negInc = { x: -incDir.x, y: -incDir.y };
+      const theta_i_deg = angBetween(negInc, nLeft);
+      const perColorDeviation: number[] = [];
 
-        const outLen = 260 + idx * 6;
-        const outEndX = exitX + Math.cos(dirOut) * outLen;
-        const outEndY = exitY + Math.sin(dirOut) * outLen;
+      // Intersect a ray (origin O, dir D) with segment A→B; return s>0 if it hits, plus normal of that face.
+      const intersectSeg = (
+        O: { x: number; y: number },
+        D: { x: number; y: number },
+        A: { x: number; y: number },
+        B: { x: number; y: number }
+      ) => {
+        const ex = B.x - A.x, ey = B.y - A.y;
+        const denom = D.x * ey - D.y * ex;
+        if (Math.abs(denom) < 1e-9) return null;
+        const s = ((A.x - O.x) * ey - (A.y - O.y) * ex) / denom;
+        const t = ((A.x - O.x) * D.y - (A.y - O.y) * D.x) / denom;
+        if (s > 1e-4 && t >= -1e-4 && t <= 1 + 1e-4) return s;
+        return null;
+      };
 
-        // Inside ray (faint, colored)
+      SPECTRUM.forEach((c) => {
+        const dIn = refract(incDir, nLeft, 1 / c.n);
+        if (!dIn) { perColorDeviation.push(0); return; }
+
+        const sR = intersectSeg(hit, dIn, apex, right);
+        const sB = intersectSeg(hit, dIn, left, right);
+        let s: number | null = null;
+        let exitNormal = nRight;
+        if (sR !== null && (sB === null || sR < sB)) { s = sR; exitNormal = nRight; }
+        else if (sB !== null) { s = sB; exitNormal = outwardNormal(left, right); }
+        if (s === null) { perColorDeviation.push(0); return; }
+
+        const exitX = hit.x + s * dIn.x;
+        const exitY = hit.y + s * dIn.y;
+
+        const dOut = refract(dIn, exitNormal, c.n);
+        if (!dOut) { perColorDeviation.push(0); return; }
+
+        const outLen = 360;
+        const outEndX = exitX + dOut.x * outLen;
+        const outEndY = exitY + dOut.y * outLen;
+
+        const dev = angBetween(incDir, dOut);
+        perColorDeviation.push(dev);
+
+        // Inside colored ray
         ctx.save();
         ctx.shadowColor = c.color;
-        ctx.shadowBlur = 6;
-        ctx.strokeStyle = c.color + "aa";
-        ctx.lineWidth = 1.4;
+        ctx.shadowBlur = 10;
+        ctx.strokeStyle = c.color;
+        ctx.lineWidth = 1.8;
         ctx.beginPath();
         ctx.moveTo(hit.x, hit.y);
         ctx.lineTo(exitX, exitY);
         ctx.stroke();
         ctx.restore();
 
-        // Outgoing colored ray with glow
+        // Outgoing colored ray
         ctx.save();
         ctx.shadowColor = c.color;
-        ctx.shadowBlur = 18;
+        ctx.shadowBlur = 24;
         ctx.strokeStyle = c.color;
-        ctx.lineWidth = 2.4;
-        ctx.setLineDash([8, 5]);
-        ctx.lineDashOffset = dashOffset;
+        ctx.lineWidth = 3.2;
         ctx.beginPath();
         ctx.moveTo(exitX, exitY);
         ctx.lineTo(outEndX, outEndY);
         ctx.stroke();
         ctx.restore();
+
+        if (animate) {
+          const px = exitX + (outEndX - exitX) * tNorm;
+          const py = exitY + (outEndY - exitY) * tNorm;
+          ctx.save();
+          ctx.shadowColor = c.color;
+          ctx.shadowBlur = 16;
+          ctx.fillStyle = "#fff";
+          ctx.beginPath();
+          ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
       });
 
-      // Spectrum legend (bottom-right)
+      // Spectrum legend (bottom-right) with per-color angles
       ctx.save();
-      const lx = W - 130;
-      const ly = H - 10 - SPECTRUM.length * 16;
-      ctx.fillStyle = "rgba(0,0,0,0.45)";
-      ctx.fillRect(lx - 8, ly - 22, 130, SPECTRUM.length * 16 + 28);
-      ctx.fillStyle = "rgba(255,255,255,0.7)";
-      ctx.font = "11px Inter, sans-serif";
+      const legendW = 200;
+      const lx = W - legendW - 12;
+      const ly = H - 12 - SPECTRUM.length * 18 - 26;
+      ctx.fillStyle = "rgba(0,0,0,0.6)";
+      ctx.strokeStyle = "rgba(255,255,255,0.15)";
+      roundRect(ctx, lx - 8, ly - 22, legendW, SPECTRUM.length * 18 + 36, 8);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "rgba(255,235,150,0.95)";
+      ctx.font = "bold 12px Inter, sans-serif";
       ctx.textAlign = "left";
-      ctx.fillText("সাত রঙ (VIBGYOR)", lx, ly - 8);
+      ctx.fillText("VIBGYOR  ·  n  ·  বিচ্যুতি", lx, ly - 6);
+      ctx.font = "11px ui-monospace, monospace";
       SPECTRUM.forEach((c, i) => {
+        const dev = perColorDeviation[i];
         ctx.fillStyle = c.color;
-        ctx.fillRect(lx, ly + i * 16, 14, 10);
-        ctx.fillStyle = "rgba(255,255,255,0.85)";
-        ctx.fillText(c.name, lx + 22, ly + i * 16 + 9);
+        ctx.fillRect(lx, ly + i * 18, 14, 12);
+        ctx.fillStyle = "rgba(255,255,255,0.9)";
+        ctx.fillText(
+          `${c.name.padEnd(6, " ")}  n=${c.n.toFixed(3)}  δ=${dev.toFixed(1)}°`,
+          lx + 22,
+          ly + i * 18 + 10
+        );
       });
+      ctx.restore();
+
+      // === FORMULA HUD (top-left) for prism ===
+      const hx = 16, hy = 16, hw = 320, hh = 132;
+      ctx.save();
+      ctx.fillStyle = "rgba(0,0,0,0.6)";
+      ctx.strokeStyle = "rgba(255,255,255,0.15)";
+      roundRect(ctx, hx, hy, hw, hh, 10);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "rgba(255,235,150,0.95)";
+      ctx.font = "bold 13px Inter, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("বিচ্ছুরণ · Prism Dispersion", hx + 12, hy + 22);
+      ctx.fillStyle = "rgba(255,255,255,0.95)";
+      ctx.font = "13px ui-monospace, monospace";
+      ctx.fillText("sin(r) = sin(i) / n(λ)", hx + 12, hy + 44);
+      ctx.fillText("δ = (i₁+i₂) − A     (A = 60°)", hx + 12, hy + 64);
+      ctx.fillStyle = "rgba(180,220,255,0.95)";
+      const iDeg = theta_i_deg;
+      ctx.fillText(`আপতন  i ≈ ${iDeg.toFixed(1)}°`, hx + 12, hy + 88);
+      ctx.fillStyle = "rgba(177,75,255,0.95)";
+      ctx.fillText(`বেগুনি : n=1.532, বেশি বাঁকে`, hx + 12, hy + 106);
+      ctx.fillStyle = "rgba(255,59,59,0.95)";
+      ctx.fillText(`লাল    : n=1.510, কম বাঁকে`, hx + 12, hy + 124);
       ctx.restore();
     };
 
