@@ -732,7 +732,7 @@ export default function RayOptics() {
       <div className="ro-header" style={{ position: "relative" }}>
         <div className="icon">🔬</div>
         <div>
-          <h1 className="bn">আলোর প্রতিফলন</h1>
+          <h1 className="bn">আলোর প্রতিসরণ ও প্রতিফলন</h1>
           <p>Ray Optics: Lens & Mirror</p>
         </div>
         <div style={{ marginLeft: "auto" }}>
@@ -932,7 +932,7 @@ export default function RayOptics() {
         </div>
       )}
 
-      <div className="ro-card" style={{ display: "flex", justifyContent: "center" }}>
+      <div className="ro-card">
         <div className="tabs">
           {MODES.map((mm) => (
             <button
@@ -1640,7 +1640,7 @@ const styles = `
   --border: #E5E7EB; --bg: #FFFFFF; --surface: #F9FAFB;
   --info-soft: #D8F3FF;
 }
-.ro-root { font-family: 'Hind Siliguri','Inter',sans-serif; color: var(--ten-ink); background: var(--surface); min-height: 100vh; padding: 12px; box-sizing: border-box; line-height: 1.5; max-width: 1152px; margin: 0 auto; }
+.ro-root { font-family: 'Hind Siliguri','Inter',sans-serif; color: var(--ten-ink); background: var(--surface); min-height: 100vh; padding: 12px; box-sizing: border-box; line-height: 1.5; max-width: 540px; margin: 0 auto; }
 .ro-root *, .ro-root *::before, .ro-root *::after { box-sizing: border-box; }
 .ro-header { background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; border-top: 4px solid var(--ten-red); display: flex; align-items: center; gap: 12px; }
 .ro-header .icon { width: 40px; height: 40px; background: #FFF5F6; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
@@ -1648,9 +1648,9 @@ const styles = `
 .ro-header p { font-size: 11px; color: var(--gray-500); margin: 2px 0 0; font-family: 'Inter',sans-serif; }
 .ro-card { background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 12px; }
 .canvas-card { padding: 10px; }
-.tabs { display: inline-flex; gap: 0; border-radius: 9999px; border: 1px solid var(--border); background: #F3F4F6; padding: 4px; flex-wrap: wrap; }
-.tab-btn { padding: 8px 16px; border: none; background: transparent; border-radius: 9999px; font-weight: 600; font-size: 13px; color: var(--gray-600); cursor: pointer; transition: all 180ms; min-height: 36px; font-family: inherit; white-space: nowrap; }
-.tab-btn.active { background: var(--ten-red); color: #fff; box-shadow: 0 2px 8px rgba(232,0,29,0.25); }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tab-btn { padding: 10px 8px; border: 1px solid var(--border); background: #fff; border-radius: 10px; font-weight: 600; font-size: 13px; color: var(--gray-600); cursor: pointer; transition: all 180ms; min-height: 44px; font-family: inherit; }
+.tab-btn.active { border-color: var(--ten-red); background: #FFF5F6; color: var(--ten-red); box-shadow: 0 0 0 3px rgba(232,0,29,0.08); }
 .canvas-wrap { position: relative; width: 100%; background: #0B1220; border-radius: 12px; overflow: hidden; }
 canvas { display: block; width: 100%; }
 .canvas-hint { position: absolute; top: 8px; left: 10px; font-size: 11px; color: rgba(255,255,255,0.55); pointer-events: none; }
