@@ -454,7 +454,7 @@ const Refraction = () => {
       ctx.fillText("sin(r) = sin(i) / n(λ)", hx + 12, hy + 44);
       ctx.fillText("δ = (i₁+i₂) − A     (A = 60°)", hx + 12, hy + 64);
       ctx.fillStyle = "rgba(180,220,255,0.95)";
-      const iDeg = (theta_i * 180) / Math.PI;
+      const iDeg = theta_i_deg;
       ctx.fillText(`আপতন  i ≈ ${iDeg.toFixed(1)}°`, hx + 12, hy + 88);
       ctx.fillStyle = "rgba(177,75,255,0.95)";
       ctx.fillText(`বেগুনি : n=1.532, বেশি বাঁকে`, hx + 12, hy + 106);
