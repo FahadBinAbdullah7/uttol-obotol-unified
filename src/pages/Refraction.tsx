@@ -271,20 +271,36 @@ const Refraction = () => {
       const hit = { x: (apex.x + left.x) / 2, y: (apex.y + left.y) / 2 };
       const inStart = { x: hit.x - 220, y: hit.y - 30 };
 
-      const dashOffset = animate ? -(tRef.current * 0.06) : 0;
+      const dashOffset = animate ? -(tRef.current * 0.08) : 0;
+      const tNorm = (Math.sin(tRef.current * 0.04) + 1) / 2; // 0..1 pulse for travelling dots
 
-      // White incoming ray with subtle glow
+      // Bright white incoming beam (core + outer glow halo)
       ctx.save();
-      ctx.shadowColor = "rgba(255,255,255,0.85)";
-      ctx.shadowBlur = 16;
-      ctx.strokeStyle = "rgba(255,255,255,0.95)";
-      ctx.lineWidth = 3;
-      ctx.setLineDash([10, 6]);
+      ctx.shadowColor = "rgba(255,255,255,0.95)";
+      ctx.shadowBlur = 24;
+      ctx.strokeStyle = "rgba(255,255,255,0.55)";
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.moveTo(inStart.x, inStart.y);
+      ctx.lineTo(hit.x, hit.y);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = "rgba(255,255,255,1)";
+      ctx.lineWidth = 2.4;
+      ctx.setLineDash([12, 6]);
       ctx.lineDashOffset = dashOffset;
       ctx.beginPath();
       ctx.moveTo(inStart.x, inStart.y);
       ctx.lineTo(hit.x, hit.y);
       ctx.stroke();
+      ctx.restore();
+
+      // "সাদা আলো" label on incoming beam
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      ctx.font = "bold 12px Inter, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("সাদা আলো (white light)", (inStart.x + hit.x) / 2, (inStart.y + hit.y) / 2 - 14);
       ctx.restore();
 
       // Direction of incoming ray
@@ -297,33 +313,27 @@ const Refraction = () => {
       // Angle of incidence relative to inward normal
       const inwardNormal = leftNormal + Math.PI;
       let theta_i = inAngle - inwardNormal;
-      // Wrap to [-PI, PI]
       theta_i = Math.atan2(Math.sin(theta_i), Math.cos(theta_i));
 
-      // For each color, refract at left face, traverse to right face, refract out
-      // Right face direction & normal
       const rightFaceAngle = Math.atan2(right.y - apex.y, right.x - apex.x);
-      const rightNormalOut = rightFaceAngle + Math.PI / 2; // outward (to the right)
+      const rightNormalOut = rightFaceAngle + Math.PI / 2;
+
+      const perColorDeviation: number[] = [];
 
       SPECTRUM.forEach((c, idx) => {
         const sinR = Math.sin(theta_i) / c.n;
         const theta_r = Math.asin(Math.max(-1, Math.min(1, sinR)));
         const dirInside = inwardNormal + theta_r;
 
-        // March from hit point in dirInside until intersect right face line
         const dx = Math.cos(dirInside);
         const dy = Math.sin(dirInside);
-        // Right face parametric: P = apex + t*(right - apex), t in [0,1]
         const rfx = right.x - apex.x;
         const rfy = right.y - apex.y;
-        // Solve: hit + s*(dx,dy) = apex + t*(rfx,rfy)
         const denom = dx * rfy - dy * rfx;
         const s = ((apex.x - hit.x) * rfy - (apex.y - hit.y) * rfx) / denom;
         const exitX = hit.x + s * dx;
         const exitY = hit.y + s * dy;
 
-        // Refract out at right face: n -> 1
-        // Angle of incidence inside relative to inward normal of right face
         const rightInwardNormal = rightNormalOut + Math.PI;
         let theta_i2 = dirInside - rightInwardNormal;
         theta_i2 = Math.atan2(Math.sin(theta_i2), Math.cos(theta_i2));
@@ -332,35 +342,51 @@ const Refraction = () => {
         const theta_o = Math.asin(clamped);
         const dirOut = rightNormalOut + theta_o;
 
-        const outLen = 260 + idx * 6;
+        const outLen = 320 + idx * 8;
         const outEndX = exitX + Math.cos(dirOut) * outLen;
         const outEndY = exitY + Math.sin(dirOut) * outLen;
 
-        // Inside ray (faint, colored)
+        // Total deviation δ ≈ (i - r) + (i2 - o)  (in degrees)
+        const dev = Math.abs((theta_i - theta_r) + (theta_i2 - theta_o)) * 180 / Math.PI;
+        perColorDeviation.push(dev);
+
+        // Inside ray (colored, brighter)
         ctx.save();
         ctx.shadowColor = c.color;
-        ctx.shadowBlur = 6;
-        ctx.strokeStyle = c.color + "aa";
-        ctx.lineWidth = 1.4;
+        ctx.shadowBlur = 10;
+        ctx.strokeStyle = c.color;
+        ctx.lineWidth = 1.8;
         ctx.beginPath();
         ctx.moveTo(hit.x, hit.y);
         ctx.lineTo(exitX, exitY);
         ctx.stroke();
         ctx.restore();
 
-        // Outgoing colored ray with glow
+        // Outgoing colored ray — solid bright core + glow halo
         ctx.save();
         ctx.shadowColor = c.color;
-        ctx.shadowBlur = 18;
+        ctx.shadowBlur = 22;
         ctx.strokeStyle = c.color;
-        ctx.lineWidth = 2.4;
-        ctx.setLineDash([8, 5]);
-        ctx.lineDashOffset = dashOffset;
+        ctx.lineWidth = 3.2;
         ctx.beginPath();
         ctx.moveTo(exitX, exitY);
         ctx.lineTo(outEndX, outEndY);
         ctx.stroke();
         ctx.restore();
+
+        // Animated travelling dot along the outgoing ray
+        if (animate) {
+          const px = exitX + (outEndX - exitX) * tNorm;
+          const py = exitY + (outEndY - exitY) * tNorm;
+          ctx.save();
+          ctx.shadowColor = c.color;
+          ctx.shadowBlur = 16;
+          ctx.fillStyle = "#fff";
+          ctx.beginPath();
+          ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
       });
 
       // Spectrum legend (bottom-right) with per-color angles
