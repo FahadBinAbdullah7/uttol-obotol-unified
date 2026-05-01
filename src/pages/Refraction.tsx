@@ -4,13 +4,13 @@ import SiteNav from "@/components/SiteNav";
 type Mode = "slab" | "prism";
 
 const SPECTRUM = [
-  { name: "বেগুনি", color: "#8B00FF", n: 1.532 },
-  { name: "নীল", color: "#4B0082", n: 1.528 },
-  { name: "আসমানী", color: "#0000FF", n: 1.525 },
-  { name: "সবুজ", color: "#00CC00", n: 1.519 },
-  { name: "হলুদ", color: "#FFD700", n: 1.517 },
-  { name: "কমলা", color: "#FF8C00", n: 1.514 },
-  { name: "লাল", color: "#FF0000", n: 1.510 },
+  { name: "বেগুনি", en: "Violet", color: "#B14BFF", n: 1.532 },
+  { name: "নীল", en: "Indigo", color: "#6A5BFF", n: 1.528 },
+  { name: "আসমানী", en: "Blue", color: "#3DA5FF", n: 1.525 },
+  { name: "সবুজ", en: "Green", color: "#3BFF6B", n: 1.519 },
+  { name: "হলুদ", en: "Yellow", color: "#FFE234", n: 1.517 },
+  { name: "কমলা", en: "Orange", color: "#FF9A2E", n: 1.514 },
+  { name: "লাল", en: "Red", color: "#FF3B3B", n: 1.510 },
 ];
 
 const Refraction = () => {
