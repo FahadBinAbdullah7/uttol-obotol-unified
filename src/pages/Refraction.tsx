@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import SiteNav from "@/components/SiteNav";
+import { Microscope, Play, Pause, Info } from "lucide-react";
 
 type Mode = "slab" | "prism";
 
@@ -44,58 +45,56 @@ const STYLES = `
 }
 .ref-root { font-family: 'Hind Siliguri','Inter',sans-serif; color: var(--ten-ink); background: var(--surface); min-height: 100vh; padding: 12px; box-sizing: border-box; line-height: 1.5; max-width: 540px; margin: 0 auto; }
 .ref-root *, .ref-root *::before, .ref-root *::after { box-sizing: border-box; }
-.ref-header { background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; border-top: 4px solid #3B82F6; display: flex; align-items: center; gap: 12px; }
-.ref-header .icon { width: 40px; height: 40px; background: #EFF6FF; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+.ref-header { background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; border-top: 4px solid var(--ten-red); display: flex; align-items: center; gap: 12px; }
+.ref-header .icon { width: 40px; height: 40px; background: #FFF5F6; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.ref-header .icon svg { width: 20px; height: 20px; color: var(--ten-red); }
 .ref-header h1 { font-size: 16px; font-weight: 700; margin: 0; }
 .ref-header p { font-size: 11px; color: var(--gray-500); margin: 2px 0 0; font-family: 'Inter',sans-serif; }
 .ref-card { background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 12px; }
 .canvas-card { padding: 10px; }
 .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .tab-btn { padding: 10px 8px; border: 1px solid var(--border); background: #fff; border-radius: 10px; font-weight: 600; font-size: 13px; color: var(--gray-600); cursor: pointer; transition: all 180ms; min-height: 44px; font-family: inherit; }
-.tab-btn.active { border-color: #3B82F6; background: #EFF6FF; color: #2563EB; box-shadow: 0 0 0 3px rgba(59,130,246,0.08); }
+.tab-btn.active { border-color: var(--ten-red); background: #FFF5F6; color: var(--ten-red); box-shadow: 0 0 0 3px rgba(232,0,29,0.08); }
 .canvas-wrap { position: relative; width: 100%; background: #0B1220; border-radius: 12px; overflow: hidden; }
 .canvas-wrap canvas { display: block; width: 100%; }
 .action-row { display: flex; gap: 8px; margin-top: 10px; }
-.anim-btn { flex: 1; min-height: 48px; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--success-dark); background: var(--success); color: #fff; font-weight: 700; font-size: 15px; font-family: inherit; cursor: pointer; transition: all 180ms; box-shadow: 0 2px 8px rgba(28,171,85,0.25); }
+.anim-btn { flex: 1; min-height: 48px; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--success-dark); background: var(--success); color: #fff; font-weight: 700; font-size: 15px; font-family: inherit; cursor: pointer; transition: all 180ms; box-shadow: 0 2px 8px rgba(28,171,85,0.25); display: flex; align-items: center; justify-content: center; gap: 8px; }
 .anim-btn:active { transform: scale(0.98); }
-.anim-btn.on { background: linear-gradient(135deg,#3B82F6,#1D4ED8); border-color: #1E40AF; box-shadow: 0 0 0 3px rgba(59,130,246,0.15), 0 4px 14px rgba(59,130,246,0.4); }
+.anim-btn.on { background: linear-gradient(135deg,#FF7B2A,#E8001D); border-color: #931212; box-shadow: 0 0 0 3px rgba(232,0,29,0.15), 0 4px 14px rgba(232,123,42,0.4); }
+.anim-btn svg { width: 18px; height: 18px; }
 .slider-row { margin-bottom: 14px; }
 .slider-row:last-child { margin-bottom: 0; }
 .slider-row label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-.slider-row .val { color: #3B82F6; font-family: 'Inter',sans-serif; }
+.slider-row .val { color: var(--ten-red); font-family: 'Inter',sans-serif; }
 input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 44px; background: transparent; cursor: pointer; }
 input[type="range"]::-webkit-slider-runnable-track { height: 6px; background: var(--gray-200); border-radius: 999px; }
 input[type="range"]::-moz-range-track { height: 6px; background: var(--gray-200); border-radius: 999px; }
-input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; height: 24px; width: 24px; border-radius: 50%; background: #3B82F6; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.2); margin-top: -9px; }
-input[type="range"]::-moz-range-thumb { height: 24px; width: 24px; border-radius: 50%; background: #3B82F6; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; height: 24px; width: 24px; border-radius: 50%; background: var(--success); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.2); margin-top: -9px; }
+input[type="range"]::-moz-range-thumb { height: 24px; width: 24px; border-radius: 50%; background: var(--success); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
 input[type="range"]:focus { outline: none; }
 .formula-card { padding: 16px; }
-.formula-display { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px; background: linear-gradient(135deg, #EFF6FF, #F0F9FF); border-radius: 12px; margin-bottom: 12px; }
-.formula-values { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px; background: var(--surface); border-radius: 8px; margin-bottom: 12px; }
-.fv-row { display: flex; align-items: center; gap: 8px; }
+.formula-display { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px; background: linear-gradient(135deg, #FFF8E7, #FFFAEF); border-radius: 12px; margin-bottom: 12px; }
 .fraction { display: inline-flex; flex-direction: column; align-items: center; position: relative; padding: 0 4px; }
 .fraction .num { font-family: 'Inter',serif; font-weight: 700; font-size: 20px; line-height: 1.2; }
-.fraction .den { font-family: 'Inter',serif; font-weight: 600; font-size: 18px; line-height: 1.2; color: #3B82F6; border-top: 2px solid var(--ten-ink); padding-top: 2px; min-width: 20px; text-align: center; }
-.fraction.small .num { font-size: 14px; }
-.fraction.small .den { font-size: 13px; border-top-width: 1.5px; }
+.fraction .den { font-family: 'Inter',serif; font-weight: 600; font-size: 18px; line-height: 1.2; color: var(--ten-red); border-top: 2px solid var(--ten-ink); padding-top: 2px; min-width: 20px; text-align: center; }
 .op { font-family: 'Inter',serif; font-size: 22px; font-weight: 700; color: var(--gray-600); }
-.formula-values .op { font-size: 16px; }
 .data-rows { }
 .data-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; border-bottom: 1px dashed var(--gray-200); }
 .data-row:last-child { border-bottom: none; }
 .data-row .k { color: var(--gray-600); }
 .data-row .v { font-weight: 700; font-family: 'Inter',sans-serif; }
 .data-row .v.bn { font-family: 'Hind Siliguri',sans-serif; }
-.explain-card { background: linear-gradient(135deg, #EFF6FF 0%, #F0F9FF 50%, #EEF2FF 100%); border: 1px solid #C7D2FE; padding: 16px; }
+.explain-card { background: linear-gradient(135deg, #FFF8E7 0%, #FFFAEF 50%, #FFF5F0 100%); border: 1px solid #F5E2A8; padding: 16px; }
 .explain-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.explain-icon { font-size: 22px; }
-.explain-title { font-weight: 700; font-size: 15px; color: #1E40AF; }
-.explain-body { font-size: 14px; line-height: 1.7; color: #1E3A5F; }
-.spectrum-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12px; }
+.explain-header svg { width: 20px; height: 20px; color: #8A6100; flex-shrink: 0; }
+.explain-title { font-weight: 700; font-size: 15px; color: #8A6100; }
+.explain-body { font-size: 14px; line-height: 1.7; color: #5A4000; }
+.spectrum-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12px; border-bottom: 1px dashed var(--gray-200); }
+.spectrum-row:last-child { border-bottom: none; }
 .spectrum-swatch { width: 14px; height: 12px; border-radius: 2px; flex-shrink: 0; }
 .spectrum-name { font-weight: 600; min-width: 50px; }
 .spectrum-n { font-family: 'Inter',sans-serif; color: var(--gray-600); }
-.spectrum-dev { font-family: 'Inter',sans-serif; color: #3B82F6; font-weight: 600; margin-left: auto; }
+.spectrum-dev { font-family: 'Inter',sans-serif; color: var(--ten-red); font-weight: 600; margin-left: auto; }
 `;
 
 const Refraction = () => {
@@ -109,7 +108,6 @@ const Refraction = () => {
   const tRef = useRef(0);
   const devRef = useRef<number[]>([]);
 
-  // Resize canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -135,14 +133,12 @@ const Refraction = () => {
       const H = canvas.height / dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      // Background
       const bg = ctx.createLinearGradient(0, 0, 0, H);
       bg.addColorStop(0, "#0a0a18");
       bg.addColorStop(1, "#1a1530");
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, W, H);
 
-      // Subtle stars
       ctx.fillStyle = "rgba(255,255,255,0.25)";
       for (let i = 0; i < 60; i++) {
         const sx = (i * 97) % W;
@@ -161,7 +157,6 @@ const Refraction = () => {
       const slabTop = H * 0.18;
       const slabBot = H * 0.82;
 
-      // Glass slab
       const grad = ctx.createLinearGradient(slabLeft, 0, slabRight, 0);
       grad.addColorStop(0, "rgba(140,200,255,0.10)");
       grad.addColorStop(0.5, "rgba(180,220,255,0.22)");
@@ -172,13 +167,11 @@ const Refraction = () => {
       ctx.fillRect(slabLeft, slabTop, thickness, slabBot - slabTop);
       ctx.strokeRect(slabLeft, slabTop, thickness, slabBot - slabTop);
 
-      // Label
       ctx.fillStyle = "rgba(255,255,255,0.45)";
       ctx.font = "12px Inter, sans-serif";
       ctx.textAlign = "center";
       ctx.fillText(`কাঁচের স্ল্যাব  (n = ${n.toFixed(2)})`, (slabLeft + slabRight) / 2, slabTop - 10);
 
-      // Geometry
       const theta1 = (angleDeg * Math.PI) / 180;
       const sinTheta2 = Math.sin(theta1) / n;
       const theta2 = Math.asin(Math.max(-1, Math.min(1, sinTheta2)));
@@ -198,7 +191,6 @@ const Refraction = () => {
 
       const dashOffset = animate ? -(tRef.current * 0.06) : 0;
 
-      // Normal lines (dashed)
       ctx.strokeStyle = "rgba(255,255,255,0.25)";
       ctx.setLineDash([4, 4]);
       ctx.lineWidth = 1;
@@ -210,7 +202,6 @@ const Refraction = () => {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Ghost ray (where it would have gone)
       ctx.strokeStyle = "rgba(255,255,255,0.18)";
       ctx.setLineDash([2, 5]);
       ctx.beginPath();
@@ -221,7 +212,6 @@ const Refraction = () => {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Glow rays
       const drawRay = (x1: number, y1: number, x2: number, y2: number) => {
         ctx.save();
         ctx.shadowColor = "rgba(255,235,150,0.8)";
@@ -240,7 +230,6 @@ const Refraction = () => {
       drawRay(entryX, entryY, exitX, exitY);
       drawRay(exitX, exitY, outEndX, outEndY);
 
-      // Lateral shift indicator
       const shift = Math.abs(
         (thickness * Math.sin(theta1 - theta2)) / Math.max(0.0001, Math.cos(theta2))
       );
@@ -253,7 +242,6 @@ const Refraction = () => {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Angle labels (near the entry/exit points, not overlapping rays)
       ctx.fillStyle = "rgba(255,255,255,0.85)";
       ctx.font = "bold 13px Inter, sans-serif";
       ctx.textAlign = "right";
@@ -261,7 +249,7 @@ const Refraction = () => {
       ctx.textAlign = "left";
       ctx.fillText(`r = ${((theta2 * 180) / Math.PI).toFixed(1)}°`, entryX + 8, entryY + 18);
 
-      // === FORMULA HUD — placed in top-right corner to avoid overlapping rays ===
+      // Formula HUD — top-right to avoid rays
       const sinI = Math.sin(theta1);
       const sinR = Math.sin(theta2);
       const rDeg = (theta2 * 180) / Math.PI;
@@ -296,18 +284,17 @@ const Refraction = () => {
       const cy = H / 2;
       const size = Math.min(W, H) * 0.38;
 
-      // 3D prism: front face (equilateral) + side faces for depth
-      const depth3D = size * 0.18; // 3D depth offset
+      // 3D prism
+      const depth3D = size * 0.18;
       const apex = { x: cx, y: cy - size * 0.55 };
       const left = { x: cx - size * 0.5, y: cy + size * 0.32 };
       const right = { x: cx + size * 0.5, y: cy + size * 0.32 };
 
-      // Back face vertices (shifted right and up for 3D effect)
       const apexB = { x: apex.x + depth3D, y: apex.y - depth3D * 0.5 };
       const leftB = { x: left.x + depth3D, y: left.y - depth3D * 0.5 };
       const rightB = { x: right.x + depth3D, y: right.y - depth3D * 0.5 };
 
-      // Draw back face first (darker)
+      // Back face
       ctx.save();
       const bgGrad = ctx.createLinearGradient(leftB.x, leftB.y, rightB.x, rightB.y);
       bgGrad.addColorStop(0, "rgba(100,140,200,0.08)");
@@ -325,7 +312,7 @@ const Refraction = () => {
       ctx.stroke();
       ctx.restore();
 
-      // Draw right side face (medium shade)
+      // Right side face
       ctx.save();
       const sideGrad = ctx.createLinearGradient(right.x, right.y, rightB.x, rightB.y);
       sideGrad.addColorStop(0, "rgba(140,180,240,0.18)");
@@ -343,7 +330,7 @@ const Refraction = () => {
       ctx.stroke();
       ctx.restore();
 
-      // Draw bottom face (darker shade)
+      // Bottom face
       ctx.save();
       const botGrad = ctx.createLinearGradient(left.x, left.y, leftB.x, leftB.y);
       botGrad.addColorStop(0, "rgba(120,160,220,0.12)");
@@ -361,7 +348,7 @@ const Refraction = () => {
       ctx.stroke();
       ctx.restore();
 
-      // Draw front face (brightest)
+      // Front face
       ctx.save();
       const pg = ctx.createLinearGradient(left.x, left.y, right.x, right.y);
       pg.addColorStop(0, "rgba(180,210,255,0.10)");
@@ -393,13 +380,10 @@ const Refraction = () => {
       ctx.stroke();
       ctx.restore();
 
-      // Hit point on left face midpoint
       const hit = { x: (apex.x + left.x) / 2, y: (apex.y + left.y) / 2 };
-
       const dashOffset = animate ? -(tRef.current * 0.08) : 0;
       const tNorm = (Math.sin(tRef.current * 0.04) + 1) / 2;
 
-      // Geometry helpers
       const centroid = {
         x: (apex.x + left.x + right.x) / 3,
         y: (apex.y + left.y + right.y) / 3,
@@ -417,7 +401,6 @@ const Refraction = () => {
       const nLeft = outwardNormal(apex, left);
       const nRight = outwardNormal(apex, right);
 
-      // Incoming direction
       const inwardN = { x: -nLeft.x, y: -nLeft.y };
       const aRad = (angleDeg * Math.PI) / 180;
       const cosA = Math.cos(aRad);
@@ -430,7 +413,7 @@ const Refraction = () => {
       const inLen = 240;
       const inStart = { x: hit.x + backDir.x * inLen, y: hit.y + backDir.y * inLen };
 
-      // Bright white incoming beam
+      // White incoming beam
       ctx.save();
       ctx.shadowColor = "rgba(255,255,255,0.95)";
       ctx.shadowBlur = 24;
@@ -451,7 +434,7 @@ const Refraction = () => {
       ctx.stroke();
       ctx.restore();
 
-      // Normal line at hit point
+      // Normal line
       ctx.save();
       ctx.strokeStyle = "rgba(255,255,255,0.35)";
       ctx.setLineDash([4, 4]);
@@ -461,7 +444,7 @@ const Refraction = () => {
       ctx.stroke();
       ctx.restore();
 
-      // "সাদা আলো" label
+      // Label
       ctx.save();
       ctx.fillStyle = "rgba(255,255,255,0.9)";
       ctx.font = "bold 12px Inter, sans-serif";
@@ -539,7 +522,6 @@ const Refraction = () => {
         const dev = angBetween(incDir, dOut);
         perColorDeviation.push(dev);
 
-        // Inside colored ray
         ctx.save();
         ctx.shadowColor = c.color;
         ctx.shadowBlur = 10;
@@ -551,7 +533,6 @@ const Refraction = () => {
         ctx.stroke();
         ctx.restore();
 
-        // Outgoing colored ray
         ctx.save();
         ctx.shadowColor = c.color;
         ctx.shadowBlur = 24;
@@ -579,7 +560,7 @@ const Refraction = () => {
 
       devRef.current = perColorDeviation;
 
-      // === FORMULA HUD — placed in top-right to avoid overlapping rays ===
+      // Formula HUD — top-right to avoid rays
       const hx = W - 280 - 12, hy = 12, hw = 280, hh = 110;
       ctx.save();
       ctx.fillStyle = "rgba(0,0,0,0.7)";
@@ -616,7 +597,6 @@ const Refraction = () => {
     };
   }, [mode, angleDeg, n, thickness, animate]);
 
-  // Computed values for formula card
   const theta1 = (angleDeg * Math.PI) / 180;
   const sinTheta2 = Math.sin(theta1) / n;
   const theta2 = Math.asin(Math.max(-1, Math.min(1, sinTheta2)));
@@ -631,163 +611,164 @@ const Refraction = () => {
       <div className="ref-root">
         <style>{STYLES}</style>
 
-      <div className="ref-header">
-        <div className="icon">🔬</div>
-        <div>
-          <h1 className="bn">আলোর প্রতিসরণ ও বিচ্ছুরণ</h1>
-          <p>Refraction & Dispersion</p>
-        </div>
-      </div>
-
-      <div className="ref-card">
-        <div className="tabs">
-          <button
-            className={"tab-btn " + (mode === "slab" ? "active" : "")}
-            onClick={() => setMode("slab")}
-          >
-            কাঁচের স্ল্যাব
-          </button>
-          <button
-            className={"tab-btn " + (mode === "prism" ? "active" : "")}
-            onClick={() => setMode("prism")}
-          >
-            প্রিজম (বিচ্ছুরণ)
-          </button>
-        </div>
-      </div>
-
-      <div className="ref-card canvas-card">
-        <div className="canvas-wrap">
-          <canvas ref={canvasRef} className="block w-full" style={{ height: 420 }} />
-        </div>
-        <div className="action-row">
-          <button
-            className={"anim-btn " + (animate ? "on" : "")}
-            onClick={() => setAnimate((a) => !a)}
-          >
-            {animate ? "⏸ অ্যানিমেশন বন্ধ" : "▶ অ্যানিমেশন চালু"}
-          </button>
-        </div>
-      </div>
-
-      <div className="ref-card">
-        <div className="slider-row">
-          <label><span>আপতন কোণ (i)</span><span className="val">{angleDeg}°</span></label>
-          <input
-            type="range"
-            min={5}
-            max={75}
-            value={angleDeg}
-            onChange={(e) => setAngleDeg(+e.target.value)}
-          />
-        </div>
-        {mode === "slab" && (
-          <>
-            <div className="slider-row">
-              <label><span>প্রতিসরাঙ্ক (n)</span><span className="val">{n.toFixed(2)}</span></label>
-              <input
-                type="range"
-                min={1.0}
-                max={2.0}
-                step={0.01}
-                value={n}
-                onChange={(e) => setN(+e.target.value)}
-              />
-            </div>
-            <div className="slider-row">
-              <label><span>স্ল্যাবের পুরুত্ব</span><span className="val">{thickness}px</span></label>
-              <input
-                type="range"
-                min={60}
-                max={260}
-                value={thickness}
-                onChange={(e) => setThickness(+e.target.value)}
-              />
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* FORMULA CARD */}
-      <div className="ref-card formula-card">
-        {mode === "slab" ? (
-          <>
-            <div className="formula-display">
-              <div className="fraction">
-                <span className="num">1</span>
-                <span className="den">v</span>
-              </div>
-              <span className="op">=</span>
-              <div className="fraction">
-                <span className="num">1</span>
-                <span className="den">u</span>
-              </div>
-              <span className="op">+</span>
-              <div className="fraction">
-                <span className="num">1</span>
-                <span className="den">f</span>
-              </div>
-            </div>
-            <div className="data-rows">
-              <div className="data-row"><span className="k">স্নেলের সূত্র</span><span className="v bn">n₁·sin(i) = n₂·sin(r)</span></div>
-              <div className="data-row"><span className="k">আপতন কোণ (i)</span><span className="v">{angleDeg}°</span></div>
-              <div className="data-row"><span className="k">প্রতিসরণ কোণ (r)</span><span className="v">{rDeg.toFixed(1)}°</span></div>
-              <div className="data-row"><span className="k">প্রতিসরাঙ্ক (n)</span><span className="v">{n.toFixed(2)}</span></div>
-              <div className="data-row"><span className="k">পার্শ্বিক সরণ</span><span className="v">{shift.toFixed(1)} px</span></div>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="formula-display">
-              <div className="fraction">
-                <span className="num">sin(r)</span>
-                <span className="den">sin(i)</span>
-              </div>
-              <span className="op">=</span>
-              <div className="fraction">
-                <span className="num">1</span>
-                <span className="den">n(λ)</span>
-              </div>
-            </div>
-            <div className="data-rows">
-              <div className="data-row"><span className="k">বিচ্ছুরণ সূত্র</span><span className="v bn">δ = (i₁+i₂) − A</span></div>
-              <div className="data-row"><span className="k">প্রিজম কোণ (A)</span><span className="v">60°</span></div>
-              <div className="data-row"><span className="k">আপতন কোণ (i)</span><span className="v">{angleDeg}°</span></div>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* SPECTRUM CARD (prism mode) */}
-      {mode === "prism" && (
-        <div className="ref-card">
-          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: "#1E40AF" }}>
-            VIBGYOR · বর্ণালী
+        <div className="ref-header">
+          <div className="icon"><Microscope /></div>
+          <div>
+            <h1 className="bn">আলোর প্রতিসরণ ও বিচ্ছুরণ</h1>
+            <p>Refraction & Dispersion</p>
           </div>
-          {SPECTRUM.map((c, i) => (
-            <div key={c.en} className="spectrum-row">
-              <div className="spectrum-swatch" style={{ background: c.color }} />
-              <span className="spectrum-name bn">{c.name}</span>
-              <span className="spectrum-n">n = {c.n.toFixed(3)}</span>
-              <span className="spectrum-dev">δ = {(devRef.current[i] || 0).toFixed(1)}°</span>
-            </div>
-          ))}
         </div>
-      )}
 
-      {/* EXPLAIN CARD */}
-      <div className="ref-card explain-card">
-        <div className="explain-header">
-          <div className="explain-icon">📍</div>
-          <div className="explain-title bn">কেন বিচ্ছুরণ ঘটে?</div>
+        <div className="ref-card">
+          <div className="tabs">
+            <button
+              className={"tab-btn " + (mode === "slab" ? "active" : "")}
+              onClick={() => setMode("slab")}
+            >
+              কাঁচের স্ল্যাব
+            </button>
+            <button
+              className={"tab-btn " + (mode === "prism" ? "active" : "")}
+              onClick={() => setMode("prism")}
+            >
+              প্রিজম (বিচ্ছুরণ)
+            </button>
+          </div>
         </div>
-        <div className="explain-body bn">
-          বিভিন্ন রঙের আলোর তরঙ্গদৈর্ঘ্য আলাদা, ফলে কাঁচে তাদের প্রতিসরাঙ্ক (n) আলাদা।
-          বেগুনি আলোর n সবচেয়ে বেশি, তাই এটি সবচেয়ে বেশি বাঁকে; লাল আলোর n সবচেয়ে কম,
-          তাই এটি সবচেয়ে কম বাঁকে। ফলে সাদা আলো সাতটি রঙে (বেগুনি–নীল–আসমানী–সবুজ–হলুদ–কমলা–লাল) বিভক্ত হয়।
+
+        <div className="ref-card canvas-card">
+          <div className="canvas-wrap">
+            <canvas ref={canvasRef} className="block w-full" style={{ height: 420 }} />
+          </div>
+          <div className="action-row">
+            <button
+              className={"anim-btn " + (animate ? "on" : "")}
+              onClick={() => setAnimate((a) => !a)}
+            >
+              {animate ? <Pause /> : <Play />}
+              {animate ? "অ্যানিমেশন বন্ধ" : "অ্যানিমেশন চালু"}
+            </button>
+          </div>
+        </div>
+
+        <div className="ref-card">
+          <div className="slider-row">
+            <label><span>আপতন কোণ (i)</span><span className="val">{angleDeg}°</span></label>
+            <input
+              type="range"
+              min={5}
+              max={75}
+              value={angleDeg}
+              onChange={(e) => setAngleDeg(+e.target.value)}
+            />
+          </div>
+          {mode === "slab" && (
+            <>
+              <div className="slider-row">
+                <label><span>প্রতিসরাঙ্ক (n)</span><span className="val">{n.toFixed(2)}</span></label>
+                <input
+                  type="range"
+                  min={1.0}
+                  max={2.0}
+                  step={0.01}
+                  value={n}
+                  onChange={(e) => setN(+e.target.value)}
+                />
+              </div>
+              <div className="slider-row">
+                <label><span>স্ল্যাবের পুরুত্ব</span><span className="val">{thickness}px</span></label>
+                <input
+                  type="range"
+                  min={60}
+                  max={260}
+                  value={thickness}
+                  onChange={(e) => setThickness(+e.target.value)}
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* FORMULA CARD */}
+        <div className="ref-card formula-card">
+          {mode === "slab" ? (
+            <>
+              <div className="formula-display">
+                <div className="fraction">
+                  <span className="num">1</span>
+                  <span className="den">v</span>
+                </div>
+                <span className="op">=</span>
+                <div className="fraction">
+                  <span className="num">1</span>
+                  <span className="den">u</span>
+                </div>
+                <span className="op">+</span>
+                <div className="fraction">
+                  <span className="num">1</span>
+                  <span className="den">f</span>
+                </div>
+              </div>
+              <div className="data-rows">
+                <div className="data-row"><span className="k">স্নেলের সূত্র</span><span className="v bn">n₁·sin(i) = n₂·sin(r)</span></div>
+                <div className="data-row"><span className="k">আপতন কোণ (i)</span><span className="v">{angleDeg}°</span></div>
+                <div className="data-row"><span className="k">প্রতিসরণ কোণ (r)</span><span className="v">{rDeg.toFixed(1)}°</span></div>
+                <div className="data-row"><span className="k">প্রতিসরাঙ্ক (n)</span><span className="v">{n.toFixed(2)}</span></div>
+                <div className="data-row"><span className="k">পার্শ্বিক সরণ</span><span className="v">{shift.toFixed(1)} px</span></div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="formula-display">
+                <div className="fraction">
+                  <span className="num">sin(r)</span>
+                  <span className="den">sin(i)</span>
+                </div>
+                <span className="op">=</span>
+                <div className="fraction">
+                  <span className="num">1</span>
+                  <span className="den">n(λ)</span>
+                </div>
+              </div>
+              <div className="data-rows">
+                <div className="data-row"><span className="k">বিচ্ছুরণ সূত্র</span><span className="v bn">δ = (i₁+i₂) − A</span></div>
+                <div className="data-row"><span className="k">প্রিজম কোণ (A)</span><span className="v">60°</span></div>
+                <div className="data-row"><span className="k">আপতন কোণ (i)</span><span className="v">{angleDeg}°</span></div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* SPECTRUM CARD */}
+        {mode === "prism" && (
+          <div className="ref-card">
+            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: "var(--ten-red)" }}>
+              VIBGYOR · বর্ণালী
+            </div>
+            {SPECTRUM.map((c, i) => (
+              <div key={c.en} className="spectrum-row">
+                <div className="spectrum-swatch" style={{ background: c.color }} />
+                <span className="spectrum-name bn">{c.name}</span>
+                <span className="spectrum-n">n = {c.n.toFixed(3)}</span>
+                <span className="spectrum-dev">δ = {(devRef.current[i] || 0).toFixed(1)}°</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* EXPLAIN CARD */}
+        <div className="ref-card explain-card">
+          <div className="explain-header">
+            <Info />
+            <div className="explain-title bn">কেন বিচ্ছুরণ ঘটে?</div>
+          </div>
+          <div className="explain-body bn">
+            বিভিন্ন রঙের আলোর তরঙ্গদৈর্ঘ্য আলাদা, ফলে কাঁচে তাদের প্রতিসরাঙ্ক (n) আলাদা।
+            বেগুনি আলোর n সবচেয়ে বেশি, তাই এটি সবচেয়ে বেশি বাঁকে; লাল আলোর n সবচেয়ে কম,
+            তাই এটি সবচেয়ে কম বাঁকে। ফলে সাদা আলো সাতটি রঙে (বেগুনি–নীল–আসমানী–সবুজ–হলুদ–কমলা–লাল) বিভক্ত হয়।
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 };

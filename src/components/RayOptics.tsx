@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import { Microscope, FlaskConical, Target, X, RotateCcw, Chrome as Home, Lightbulb, Info, ChevronRight, Trophy, Star } from "lucide-react";
 
 type Mode = "convexLens" | "concaveLens" | "convexMirror" | "concaveMirror";
 
@@ -137,28 +138,28 @@ const fmtNum = (n: number, decimals = 0) => {
 // Use case data with icons and descriptions
 const USE_CASES: Record<string, { icon: string; title: string; desc: string; animation: string }[]> = {
   projector: [
-    { icon: "🎬", title: "প্রজেক্টর", desc: "ছোট স্লাইড থেকে বড় পর্দায় ছবি তৈরি করে", animation: "projector" },
+    { icon: "projector", title: "প্রজেক্টর", desc: "ছোট স্লাইড থেকে বড় পর্দায় ছবি তৈরি করে", animation: "projector" },
   ],
   camera: [
-    { icon: "📷", title: "ক্যামেরা", desc: "বড় দৃশ্য থেকে ছোট ফিল্মে ছবি ধরে", animation: "camera" },
+    { icon: "camera", title: "ক্যামেরা", desc: "বড় দৃশ্য থেকে ছোট ফিল্মে ছবি ধরে", animation: "camera" },
   ],
   magnifier: [
-    { icon: "🔍", title: "ম্যাগনিফাইং গ্লাস", desc: "ছোট জিনিস বড় করে দেখায়", animation: "magnifier" },
+    { icon: "magnifier", title: "ম্যাগনিফাইং গ্লাস", desc: "ছোট জিনিস বড় করে দেখায়", animation: "magnifier" },
   ],
   torch: [
-    { icon: "🔦", title: "টর্চলাইট", desc: "আলো সমান্তরাল রশ্মিতে পাঠায়", animation: "torch" },
+    { icon: "torch", title: "টর্চলাইট", desc: "আলো সমান্তরাল রশ্মিতে পাঠায়", animation: "torch" },
   ],
   glasses: [
-    { icon: "👓", title: "চশমা (Myopia)", desc: "দূরের জিনিস স্পষ্ট দেখায়", animation: "glasses" },
+    { icon: "glasses", title: "চশমা (Myopia)", desc: "দূরের জিনিস স্পষ্ট দেখায়", animation: "glasses" },
   ],
   rearview: [
-    { icon: "🚗", title: "পেছনের আয়না", desc: "বড় দৃষ্টিক্ষেত্র দেখায়", animation: "rearview" },
+    { icon: "rearview", title: "পেছনের আয়না", desc: "বড় দৃষ্টিক্ষেত্র দেখায়", animation: "rearview" },
   ],
   shaving: [
-    { icon: "🪞", title: "মেকআপ আয়না", desc: "মুখ বড় করে দেখায়", animation: "shaving" },
+    { icon: "shaving", title: "মেকআপ আয়না", desc: "মুখ বড় করে দেখায়", animation: "shaving" },
   ],
   equal: [
-    { icon: "⚖️", title: "সমান প্রতিবিম্ব", desc: "বস্তুর সমান আকারের উল্টো ছবি", animation: "equal" },
+    { icon: "equal", title: "সমান প্রতিবিম্ব", desc: "বস্তুর সমান আকারের উল্টো ছবি", animation: "equal" },
   ],
 };
 
@@ -730,14 +731,14 @@ export default function RayOptics() {
 
       {/* LAB TEST BUTTON in header */}
       <div className="ro-header" style={{ position: "relative" }}>
-        <div className="icon">🔬</div>
+        <div className="icon"><Microscope size={20} /></div>
         <div>
           <h1 className="bn">আলোর প্রতিসরণ ও প্রতিফলন</h1>
           <p>Ray Optics: Lens & Mirror</p>
         </div>
         <div style={{ marginLeft: "auto" }}>
           <button className="lab-test-btn" onClick={() => { setLabMode("name"); }}>
-            🧪 ল্যাব টেস্ট
+            <FlaskConical size={14} /> ল্যাব টেস্ট
           </button>
         </div>
       </div>
@@ -746,7 +747,7 @@ export default function RayOptics() {
       {labMode === "name" && (
         <div className="ro-card lab-overlay">
           <div className="lab-name-card">
-            <div className="lab-name-icon">🧪</div>
+            <div className="lab-name-icon"><FlaskConical size={40} /></div>
             <h2 className="bn">ল্যাব টেস্ট শুরু করো!</h2>
             <p className="bn">৫টি কুইজে সঠিক উত্তর দিয়ে পয়েন্ট অর্জন করো</p>
             <input
@@ -783,7 +784,7 @@ export default function RayOptics() {
                 setLabMode("playing");
               }}
             >
-              🚀 শুরু করো
+              শুরু করো
             </button>
             <button className="lab-cancel-btn" onClick={() => setLabMode("off")}>বাতিল</button>
           </div>
@@ -808,7 +809,7 @@ export default function RayOptics() {
           <div className="ro-card quest-card">
             <div className="quest-header">
               <div className="quest-icon-wrap">
-                <span className="quest-icon">🎯</span>
+                <span className="quest-icon"><Target size={22} /></span>
               </div>
               <div>
                 <div className="quest-label">ACTIVE QUEST</div>
@@ -819,26 +820,26 @@ export default function RayOptics() {
             <div className="quest-instruction bn">"{quest.instruction}"</div>
             {!modeMatches && (
               <div className="quest-mode-hint bn">
-                ⚠️ প্রথমে "<strong>{quest.targetModeLabel}</strong>" সিলেক্ট করো ↓
+                প্রথমে "<strong>{quest.targetModeLabel}</strong>" সিলেক্ট করো ↓
               </div>
             )}
             {modeMatches && !isInRange && (
               <div className="quest-mode-ok bn">
-                ✅ {quest.targetModeLabel} সিলেক্ট হয়েছে — এবার মোমবাতি সরাও!
+                {quest.targetModeLabel} সিলেক্ট হয়েছে — এবার মোমবাতি সরাও!
               </div>
             )}
             <div className="quest-hint bn">
-              <span className="quest-hint-icon">👆</span> {quest.hint}
+              <span className="quest-hint-icon"><Info size={14} /></span> {quest.hint}
             </div>
             {isInRange && !candleTouched && (
               <div className="quest-mode-hint bn">
-                ☝️ মোমবাতিটিকে একবার ছুঁয়ে দেখো — তারপর কুইজ আসবে!
+                মোমবাতিটিকে একবার ছুঁয়ে দেখো — তারপর কুইজ আসবে!
               </div>
             )}
             {isInRange && candleTouched && (
-              <div className="quest-success-flash bn">✅ সঠিক অবস্থান! কুইজ আসছে...</div>
+              <div className="quest-success-flash bn">সঠিক অবস্থান! কুইজ আসছে...</div>
             )}
-            <button className="lab-cancel-btn" onClick={() => setLabMode("off")} style={{ marginTop: 8 }}>❌ টেস্ট বাতিল</button>
+            <button className="lab-cancel-btn" onClick={() => setLabMode("off")} style={{ marginTop: 8 }}>টেস্ট বাতিল</button>
           </div>
         );
       })()}
@@ -849,7 +850,7 @@ export default function RayOptics() {
         return (
           <div className="ro-card quiz-card">
             <div className="quiz-header">
-              <span className="quiz-icon">❓</span>
+              <span className="quiz-icon"><Info size={22} /></span>
               <span className="quiz-round bn">প্রশ্ন {toBn(labRound + 1)}/৫</span>
             </div>
             <div className="quiz-question bn">{quest.quiz.question}</div>
@@ -894,7 +895,7 @@ export default function RayOptics() {
             </div>
             {answerResult && (
               <div className={"quiz-feedback bn " + answerResult}>
-                {answerResult === "correct" ? "🎉 সঠিক! +২০ পয়েন্ট" : "❌ ভুল উত্তর"}
+                {answerResult === "correct" ? "সঠিক! +২০ পয়েন্ট" : "ভুল উত্তর"}
               </div>
             )}
           </div>
@@ -904,7 +905,7 @@ export default function RayOptics() {
       {/* LAB TEST — RESULT */}
       {labMode === "result" && (
         <div className="ro-card result-card">
-          <div className="result-trophy">{labScore >= 80 ? "🏆" : labScore >= 40 ? "🎖️" : "⭐"}</div>
+          <div className="result-trophy"><Trophy size={48} /></div>
           <h2 className="bn result-title">
             {labScore >= 80 ? "অসাধারণ!" : labScore >= 40 ? "ভালো চেষ্টা!" : "আবার চেষ্টা করো!"}
           </h2>
@@ -912,7 +913,7 @@ export default function RayOptics() {
           <div className="result-score">{toBn(labScore)}<span>/১০০ পয়েন্ট</span></div>
           <div className="result-stars">
             {[...Array(5)].map((_, i) => (
-              <span key={i} className={i < labScore / 20 ? "star-filled" : "star-empty"}>★</span>
+              <span key={i} className={i < labScore / 20 ? "star-filled" : "star-empty"}><Star size={20} /></span>
             ))}
           </div>
           <div className="result-btns">
@@ -926,8 +927,8 @@ export default function RayOptics() {
               setSelectedAnswer(null);
               setAnswerResult(null);
               setLabMode("playing");
-            }}>🔄 আবার খেলো</button>
-            <button className="lab-cancel-btn" onClick={() => { setLabMode("off"); }}>🏠 হোমে ফিরো</button>
+            }}>আবার খেলো</button>
+            <button className="lab-cancel-btn" onClick={() => { setLabMode("off"); }}>হোমে ফিরো</button>
           </div>
         </div>
       )}
@@ -956,7 +957,7 @@ export default function RayOptics() {
             onPointerCancel={onPointerUp}
             style={{ touchAction: "none", cursor: dragRef.current.active ? "grabbing" : "grab" }}
           />
-          <div className="canvas-hint bn">মোমবাতিকে ছুঁয়ে টেনে সরাও 👆</div>
+          <div className="canvas-hint bn">মোমবাতিকে ছুঁয়ে টেনে সরাও</div>
         </div>
         <div className="action-row">
           <button
@@ -966,9 +967,9 @@ export default function RayOptics() {
               else { setLightOn(true); setAnimProgress(0); }
             }}
           >
-            {lightOn ? "🔥 আলো নিভাও" : "🕯️ মোমবাতি জ্বালাও"}
+            {lightOn ? "আলো নিভাও" : "মোমবাতি জ্বালাও"}
           </button>
-          <button className="reset-btn" onClick={() => { setAnimProgress(0); }}>↻ আবার</button>
+          <button className="reset-btn" onClick={() => { setAnimProgress(0); }}>আবার</button>
         </div>
         <div className="legend">
           <span><i style={{ background: RAY_COLORS.ray1 }} /> সমান্তরাল রশ্মি</span>
@@ -1048,14 +1049,14 @@ export default function RayOptics() {
       {/* ANIMATED EXPLAIN CARD with use case */}
       <div className="ro-card explain-card-v2">
         <div className="explain-header">
-          <div className="explain-icon-pulse">📍</div>
+          <div className="explain-icon-pulse"><Info size={20} /></div>
           <div className="explain-title bn">এই অবস্থায় কী হচ্ছে:</div>
         </div>
         <div className="explain-body bn">{explanation}</div>
 
         {labMode === "off" && currentUseCases.length > 0 && (
           <div className="use-case-section">
-            <div className="use-case-label bn">🎯 ব্যবহার (Use Case)</div>
+            <div className="use-case-label bn">ব্যবহার (Use Case)</div>
             <div className="use-case-cards">
               {currentUseCases.map((uc, i) => (
                 <button
@@ -1063,12 +1064,12 @@ export default function RayOptics() {
                   className={"use-case-card" + (showUseCase === uc.animation ? " active" : "")}
                   onClick={() => setShowUseCase(showUseCase === uc.animation ? null : uc.animation)}
                 >
-                  <span className="uc-icon">{uc.icon}</span>
+                  <span className="uc-icon">{uc.title.charAt(0)}</span>
                   <div>
                     <div className="uc-title bn">{uc.title}</div>
                     <div className="uc-desc bn">{uc.desc}</div>
                   </div>
-                  <span className="uc-arrow">{showUseCase === uc.animation ? "▲" : "▶"}</span>
+                  <span className="uc-arrow"><ChevronRight size={12} className={showUseCase === uc.animation ? "rotate-90" : ""} /></span>
                 </button>
               ))}
             </div>
@@ -1643,7 +1644,7 @@ const styles = `
 .ro-root { font-family: 'Hind Siliguri','Inter',sans-serif; color: var(--ten-ink); background: var(--surface); min-height: 100vh; padding: 12px; box-sizing: border-box; line-height: 1.5; max-width: 540px; margin: 0 auto; }
 .ro-root *, .ro-root *::before, .ro-root *::after { box-sizing: border-box; }
 .ro-header { background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; border-top: 4px solid var(--ten-red); display: flex; align-items: center; gap: 12px; }
-.ro-header .icon { width: 40px; height: 40px; background: #FFF5F6; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+.ro-header .icon { width: 40px; height: 40px; background: #FFF5F6; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--ten-red); }
 .ro-header h1 { font-size: 16px; font-weight: 700; margin: 0; }
 .ro-header p { font-size: 11px; color: var(--gray-500); margin: 2px 0 0; font-family: 'Inter',sans-serif; }
 .ro-card { background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 12px; }
@@ -1701,7 +1702,7 @@ input[type="range"]:focus { outline: none; }
 /* EXPLAIN CARD v2 — animated */
 .explain-card-v2 { background: linear-gradient(135deg, #FFF8E7 0%, #FFFAEF 50%, #FFF5F0 100%); border: 1px solid #F5E2A8; padding: 16px; overflow: hidden; }
 .explain-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.explain-icon-pulse { font-size: 22px; animation: pulse-glow 2s ease-in-out infinite; }
+.explain-icon-pulse { font-size: 22px; animation: pulse-glow 2s ease-in-out infinite; color: #8A6100; display: flex; align-items: center; }
 @keyframes pulse-glow {
   0%, 100% { transform: scale(1); filter: brightness(1); }
   50% { transform: scale(1.2); filter: brightness(1.3); }
@@ -1720,10 +1721,10 @@ input[type="range"]:focus { outline: none; }
 .use-case-card { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(255,255,255,0.8); border: 1px solid #F0DFA0; border-radius: 12px; cursor: pointer; transition: all 250ms ease; font-family: inherit; text-align: left; width: 100%; }
 .use-case-card:hover { background: rgba(255,255,255,1); box-shadow: 0 2px 8px rgba(0,0,0,0.06); transform: translateY(-1px); }
 .use-case-card.active { background: #FFF; border-color: var(--ten-red); box-shadow: 0 0 0 2px rgba(232,0,29,0.1); }
-.uc-icon { font-size: 24px; flex-shrink: 0; }
+.uc-icon { font-size: 18px; flex-shrink: 0; width: 28px; height: 28px; border-radius: 6px; background: var(--gray-100); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--ten-red); }
 .uc-title { font-weight: 700; font-size: 13px; color: var(--ten-ink); }
 .uc-desc { font-size: 11px; color: var(--gray-500); margin-top: 2px; }
-.uc-arrow { font-size: 10px; color: var(--gray-500); margin-left: auto; flex-shrink: 0; }
+.uc-arrow { font-size: 10px; color: var(--gray-500); margin-left: auto; flex-shrink: 0; display: flex; align-items: center; transition: transform 180ms; }
 .use-case-animation { margin-top: 10px; border-radius: 10px; overflow: hidden; background: #0D1525; animation: expandIn 0.3s ease-out; }
 .use-case-animation canvas { display: block; width: 100%; height: 200px; }
 .uc-anim-label { text-align: center; color: rgba(255,255,255,0.5); font-size: 10px; padding: 6px; background: rgba(0,0,0,0.3); }
@@ -1733,14 +1734,14 @@ input[type="range"]:focus { outline: none; }
 }
 
 /* LAB TEST STYLES */
-.lab-test-btn { padding: 6px 12px; background: linear-gradient(135deg, #FF6B35, #E8001D); color: #fff; border: none; border-radius: 999px; font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 8px rgba(232,0,29,0.25); transition: all 200ms; min-height: 36px; }
+.lab-test-btn { padding: 6px 12px; background: linear-gradient(135deg, #FF6B35, #E8001D); color: #fff; border: none; border-radius: 999px; font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 8px rgba(232,0,29,0.25); transition: all 200ms; min-height: 36px; display: inline-flex; align-items: center; gap: 4px; }
 .lab-test-btn:hover { transform: scale(1.05); box-shadow: 0 4px 14px rgba(232,0,29,0.35); }
 .quest-mode-hint { background: #FFF3CD; color: #856404; padding: 10px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 8px; border: 1px solid #FFEEBA; }
 .quest-mode-ok { background: #D4EDDA; color: #155724; padding: 10px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 8px; border: 1px solid #C3E6CB; }
 /* Lab name entry */
 .lab-overlay { animation: fadeSlideIn 0.3s ease-out; text-align: center; }
 .lab-name-card { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 10px 0; }
-.lab-name-icon { font-size: 48px; animation: pulse-glow 2s ease-in-out infinite; }
+.lab-name-icon { font-size: 48px; animation: pulse-glow 2s ease-in-out infinite; color: var(--ten-red); }
 .lab-name-card h2 { font-size: 18px; font-weight: 700; margin: 0; }
 .lab-name-card p { font-size: 13px; color: var(--gray-500); margin: 0; }
 .lab-name-input { width: 100%; max-width: 280px; padding: 12px 16px; border-radius: 12px; border: 2px solid var(--border); font-size: 15px; font-family: inherit; text-align: center; transition: border-color 200ms; outline: none; }
@@ -1755,19 +1756,19 @@ input[type="range"]:focus { outline: none; }
 .quest-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #E8001D, #FF6B35, #FFD23F); }
 .quest-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
 .quest-icon-wrap { width: 48px; height: 48px; background: #FFF0F0; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
-.quest-icon { font-size: 26px; animation: pulse-glow 2s ease-in-out infinite; }
+.quest-icon { font-size: 26px; animation: pulse-glow 2s ease-in-out infinite; color: var(--ten-red); display: flex; align-items: center; justify-content: center; }
 .quest-label { font-size: 10px; font-weight: 800; color: #E8001D; letter-spacing: 1.5px; text-transform: uppercase; font-family: 'Inter',sans-serif; }
 .quest-title { font-size: 16px; font-weight: 700; }
 .quest-score-badge { margin-left: auto; background: linear-gradient(135deg, #FFD23F, #FF9930); color: #5A3800; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; font-family: inherit; }
 .quest-instruction { background: rgba(255,255,255,0.7); padding: 14px 16px; border-radius: 12px; font-size: 14px; line-height: 1.7; color: var(--ten-ink); margin-bottom: 10px; }
 .quest-hint { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--success-dark); }
-.quest-hint-icon { font-size: 14px; }
+.quest-hint-icon { font-size: 14px; display: flex; align-items: center; }
 .quest-success-flash { background: #D4EDDA; color: #155724; padding: 10px; border-radius: 10px; text-align: center; font-weight: 700; margin-top: 8px; animation: pulse-glow 1s ease-in-out infinite; }
 
 /* Quiz card */
 .quiz-card { animation: fadeSlideIn 0.3s ease-out; background: linear-gradient(135deg, #EFF6FF, #F5F3FF); border: 2px solid #93C5FD; }
 .quiz-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-.quiz-icon { font-size: 28px; }
+.quiz-icon { font-size: 28px; color: #3B82F6; display: flex; align-items: center; }
 .quiz-round { font-size: 13px; font-weight: 700; color: #3B82F6; }
 .quiz-question { font-size: 15px; font-weight: 700; line-height: 1.6; margin-bottom: 14px; }
 .quiz-options { display: flex; flex-direction: column; gap: 8px; }
@@ -1784,13 +1785,13 @@ input[type="range"]:focus { outline: none; }
 
 /* Result card */
 .result-card { text-align: center; padding: 24px 16px; animation: fadeSlideIn 0.4s ease-out; background: linear-gradient(135deg, #FFF8E7 0%, #FFFAEF 50%, #FFF5F0 100%); border: 2px solid #F5E2A8; }
-.result-trophy { font-size: 64px; animation: pulse-glow 2s ease-in-out infinite; }
+.result-trophy { font-size: 64px; animation: pulse-glow 2s ease-in-out infinite; color: var(--ten-red); display: flex; justify-content: center; }
 .result-title { font-size: 22px; font-weight: 800; margin: 8px 0 4px; }
 .result-name { font-size: 16px; color: var(--gray-600); font-weight: 600; }
 .result-score { font-size: 36px; font-weight: 900; color: var(--ten-red); font-family: 'Inter',sans-serif; margin: 12px 0 8px; }
 .result-score span { font-size: 16px; font-weight: 600; color: var(--gray-500); }
-.result-stars { font-size: 28px; margin-bottom: 16px; }
-.star-filled { color: #FFD23F; }
-.star-empty { color: var(--gray-200); }
+.result-stars { font-size: 28px; margin-bottom: 16px; display: flex; justify-content: center; gap: 4px; }
+.star-filled { color: #FFD23F; display: inline-flex; }
+.star-empty { color: var(--gray-200); display: inline-flex; }
 .result-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 `;
