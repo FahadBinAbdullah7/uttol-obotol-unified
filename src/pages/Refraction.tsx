@@ -529,16 +529,18 @@ const Refraction = () => {
         const deviations: number[] = [];
 
         SPECTRUM.forEach((c) => {
-          const dIn = refract(incDir, nLeft, 1 / c.n);
+          const dIn = refract(incDir, entryNormal!, 1 / c.n);
           if (!dIn) { deviations.push(NaN); return; }
 
-          const sR = intersectSeg(hit, dIn, apex, right);
-          const sB = intersectSeg(hit, dIn, left, right);
+          // Find nearest exit face (any face that isn't the entry one)
           let s: number | null = null;
-          let exitNormal = nRight;
-          if (sR !== null && (sB === null || sR < sB)) { s = sR; exitNormal = nRight; }
-          else if (sB !== null) { s = sB; exitNormal = nBottom; }
-          if (s === null) { deviations.push(NaN); return; }
+          let exitNormal: { x: number; y: number } | null = null;
+          for (const f of faces) {
+            if (f.n === entryNormal) continue;
+            const ss = intersectSeg(hit, dIn, f.a, f.b);
+            if (ss !== null && (s === null || ss < s)) { s = ss; exitNormal = f.n; }
+          }
+          if (s === null || !exitNormal) { deviations.push(NaN); return; }
 
           const exitX = hit.x + s * dIn.x;
           const exitY = hit.y + s * dIn.y;
