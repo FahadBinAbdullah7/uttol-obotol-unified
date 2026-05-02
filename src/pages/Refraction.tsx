@@ -627,15 +627,35 @@ const Refraction = () => {
   const shift = Math.abs((thickness * Math.sin(theta1 - theta2)) / Math.max(0.0001, Math.cos(theta2)));
 
   const addRay = () => {
-    if (rays.length >= 5) return;
+    if (rays.length >= 6) return;
     const id = nextRayId.current++;
-    const angle = 30 + Math.round(Math.random() * 30);
-    const offset = Math.round((Math.random() * 1.4 - 0.7) * 100) / 100;
-    setRays((rs) => [...rs, { id, angle, offset }]);
+    // Place at a random spot on the left half of the canvas
+    const sx = 0.05 + Math.random() * 0.25;
+    const sy = 0.2 + Math.random() * 0.6;
+    setRays((rs) => [...rs, { id, sx, sy }]);
   };
   const removeRay = (id: number) => setRays((rs) => rs.filter((r) => r.id !== id));
   const updateRay = (id: number, patch: Partial<PrismRay>) =>
     setRays((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+
+  // Click-to-place mode: when on, the next canvas click adds a ray at that spot.
+  const [placingRay, setPlacingRay] = useState(false);
+
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (mode !== "prism") return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const sx = (e.clientX - rect.left) / rect.width;
+    const sy = (e.clientY - rect.top) / rect.height;
+    if (rays.length >= 6) {
+      setPlacingRay(false);
+      return;
+    }
+    const id = nextRayId.current++;
+    setRays((rs) => [...rs, { id, sx, sy }]);
+    setPlacingRay(false);
+  };
 
   const colorFor = (id: number) => RAY_PRESET_COLORS[(id - 1) % RAY_PRESET_COLORS.length];
 
