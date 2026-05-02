@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import SiteNav from "@/components/SiteNav";
-import { Microscope, Play, Pause, Info } from "lucide-react";
+import { Microscope, Play, Pause, Info, Plus, Trash2 } from "lucide-react";
 
 type Mode = "slab" | "prism";
 
@@ -14,23 +14,13 @@ const SPECTRUM = [
   { name: "লাল", en: "Red", color: "#FF3B3B", n: 1.510 },
 ];
 
-function roundRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  r: number
-) {
-  const rr = Math.min(r, w / 2, h / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + rr, y);
-  ctx.arcTo(x + w, y, x + w, y + h, rr);
-  ctx.arcTo(x + w, y + h, x, y + h, rr);
-  ctx.arcTo(x, y + h, x, y, rr);
-  ctx.arcTo(x, y, x + w, y, rr);
-  ctx.closePath();
-}
+const RAY_PRESET_COLORS = ["#FFFFFF", "#FFD166", "#06D6A0", "#EF476F", "#118AB2", "#F78C6B"];
+
+type PrismRay = {
+  id: number;
+  angle: number; // incidence angle in degrees relative to left-face normal
+  offset: number; // -1..1 offset along the left face (where it hits)
+};
 
 const STYLES = `
 @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
@@ -57,7 +47,7 @@ const STYLES = `
 @media (min-width: 768px) { .experiment-row { flex-direction: row; } }
 .experiment-canvas { flex: 1; min-width: 0; }
 .experiment-controls { flex: 0 0 auto; width: 100%; }
-@media (min-width: 768px) { .experiment-controls { width: 260px; } }
+@media (min-width: 768px) { .experiment-controls { width: 280px; } }
 .canvas-card { padding: 10px; }
 .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .tab-btn { padding: 10px 8px; border: 1px solid var(--border); background: #fff; border-radius: 10px; font-weight: 600; font-size: 13px; color: var(--gray-600); cursor: pointer; transition: all 180ms; min-height: 44px; font-family: inherit; }
@@ -69,27 +59,32 @@ const STYLES = `
 .anim-btn:active { transform: scale(0.98); }
 .anim-btn.on { background: linear-gradient(135deg,#FF7B2A,#E8001D); border-color: #931212; box-shadow: 0 0 0 3px rgba(232,0,29,0.15), 0 4px 14px rgba(232,123,42,0.4); }
 .anim-btn svg { width: 18px; height: 18px; }
+.add-btn { min-height: 40px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--ten-red-dark); background: var(--ten-red); color: #fff; font-weight: 700; font-size: 13px; font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.add-btn svg { width: 14px; height: 14px; }
+.del-btn { background: transparent; border: none; cursor: pointer; color: var(--gray-500); padding: 4px; border-radius: 6px; }
+.del-btn:hover { color: var(--ten-red); background: #FFF5F6; }
+.del-btn svg { width: 16px; height: 16px; }
 .slider-row { margin-bottom: 14px; }
 .slider-row:last-child { margin-bottom: 0; }
 .slider-row label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
 .slider-row .val { color: var(--ten-red); font-family: 'Inter',sans-serif; }
-input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 44px; background: transparent; cursor: pointer; }
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 36px; background: transparent; cursor: pointer; }
 input[type="range"]::-webkit-slider-runnable-track { height: 6px; background: var(--gray-200); border-radius: 999px; }
 input[type="range"]::-moz-range-track { height: 6px; background: var(--gray-200); border-radius: 999px; }
-input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; height: 24px; width: 24px; border-radius: 50%; background: var(--success); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.2); margin-top: -9px; }
-input[type="range"]::-moz-range-thumb { height: 24px; width: 24px; border-radius: 50%; background: var(--success); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; height: 20px; width: 20px; border-radius: 50%; background: var(--success); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.2); margin-top: -7px; }
+input[type="range"]::-moz-range-thumb { height: 20px; width: 20px; border-radius: 50%; background: var(--success); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
 input[type="range"]:focus { outline: none; }
 .formula-card { padding: 16px; }
-.formula-display { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px; background: linear-gradient(135deg, #FFF8E7, #FFFAEF); border-radius: 12px; margin-bottom: 12px; }
+.formula-display { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px; background: linear-gradient(135deg, #FFF8E7, #FFFAEF); border-radius: 12px; margin-bottom: 12px; flex-wrap: wrap; }
 .fraction { display: inline-flex; flex-direction: column; align-items: center; position: relative; padding: 0 4px; }
-.fraction .num { font-family: 'Inter',serif; font-weight: 700; font-size: 20px; line-height: 1.2; }
-.fraction .den { font-family: 'Inter',serif; font-weight: 600; font-size: 18px; line-height: 1.2; color: var(--ten-red); border-top: 2px solid var(--ten-ink); padding-top: 2px; min-width: 20px; text-align: center; }
+.fraction .num { font-family: 'Inter',serif; font-weight: 700; font-size: 18px; line-height: 1.2; border-bottom: 2px solid var(--ten-ink); padding-bottom: 2px; min-width: 36px; text-align: center; }
+.fraction .den { font-family: 'Inter',serif; font-weight: 600; font-size: 18px; line-height: 1.2; color: var(--ten-red); padding-top: 2px; min-width: 36px; text-align: center; }
 .op { font-family: 'Inter',serif; font-size: 22px; font-weight: 700; color: var(--gray-600); }
 .data-rows { }
-.data-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; border-bottom: 1px dashed var(--gray-200); }
+.data-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; border-bottom: 1px dashed var(--gray-200); gap: 8px; }
 .data-row:last-child { border-bottom: none; }
 .data-row .k { color: var(--gray-600); }
-.data-row .v { font-weight: 700; font-family: 'Inter',sans-serif; }
+.data-row .v { font-weight: 700; font-family: 'Inter',sans-serif; text-align: right; }
 .data-row .v.bn { font-family: 'Hind Siliguri',sans-serif; }
 .explain-card { background: linear-gradient(135deg, #FFF8E7 0%, #FFFAEF 50%, #FFF5F0 100%); border: 1px solid #F5E2A8; padding: 16px; }
 .explain-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
@@ -102,7 +97,55 @@ input[type="range"]:focus { outline: none; }
 .spectrum-name { font-weight: 600; min-width: 50px; }
 .spectrum-n { font-family: 'Inter',sans-serif; color: var(--gray-600); }
 .spectrum-dev { font-family: 'Inter',sans-serif; color: var(--ten-red); font-weight: 600; margin-left: auto; }
+.ray-card { border: 1px solid var(--border); border-radius: 10px; padding: 10px; margin-bottom: 8px; background: #fff; }
+.ray-card.active { border-color: var(--ten-red); box-shadow: 0 0 0 2px rgba(232,0,29,0.08); }
+.ray-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 8px; }
+.ray-tag { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13px; }
+.ray-dot { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 6px currentColor; }
+.controls-title { font-weight: 700; font-size: 13px; color: var(--ten-red); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
+.section-title { font-weight: 700; font-size: 14px; margin-bottom: 10px; color: var(--ten-ink); }
+.calc-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 768px) { .calc-grid { grid-template-columns: 1fr 1fr; } }
+.calc-block { border: 1px solid var(--border); border-radius: 10px; padding: 10px; background: #FAFAFB; }
+.calc-block-head { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13px; margin-bottom: 6px; }
 `;
+
+function refract(
+  d: { x: number; y: number },
+  nOut: { x: number; y: number },
+  eta: number
+) {
+  let nn = nOut;
+  let cosI = -(d.x * nn.x + d.y * nn.y);
+  if (cosI < 0) { nn = { x: -nn.x, y: -nn.y }; cosI = -cosI; }
+  const sin2T = eta * eta * (1 - cosI * cosI);
+  if (sin2T > 1) return null;
+  const cosT = Math.sqrt(1 - sin2T);
+  return {
+    x: eta * d.x + (eta * cosI - cosT) * nn.x,
+    y: eta * d.y + (eta * cosI - cosT) * nn.y,
+  };
+}
+
+function angBetween(a: { x: number; y: number }, b: { x: number; y: number }) {
+  const dot = Math.max(-1, Math.min(1, a.x * b.x + a.y * b.y));
+  return (Math.acos(dot) * 180) / Math.PI;
+}
+
+function intersectSeg(
+  O: { x: number; y: number },
+  D: { x: number; y: number },
+  A: { x: number; y: number },
+  B: { x: number; y: number }
+) {
+  const ex = B.x - A.x, ey = B.y - A.y;
+  const denom = D.x * ey - D.y * ex;
+  if (Math.abs(denom) < 1e-9) return null;
+  const s = ((A.x - O.x) * ey - (A.y - O.y) * ex) / denom;
+  const t = ((A.x - O.x) * D.y - (A.y - O.y) * D.x) / denom;
+  if (s > 1e-4 && t >= -1e-4 && t <= 1 + 1e-4) return s;
+  return null;
+}
 
 const Refraction = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -113,7 +156,17 @@ const Refraction = () => {
   const [thickness, setThickness] = useState(160);
   const [animate, setAnimate] = useState(true);
   const tRef = useRef(0);
-  const devRef = useRef<number[]>([]);
+
+  // Multiple rays for prism
+  const [rays, setRays] = useState<PrismRay[]>([
+    { id: 1, angle: 45, offset: 0 },
+  ]);
+  const nextRayId = useRef(2);
+
+  // Per-ray, per-color deviation results (for under-canvas display)
+  const [rayResults, setRayResults] = useState<
+    { id: number; theta_i: number; deviations: number[] }[]
+  >([]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -237,9 +290,6 @@ const Refraction = () => {
       drawRay(entryX, entryY, exitX, exitY);
       drawRay(exitX, exitY, outEndX, outEndY);
 
-      const shift = Math.abs(
-        (thickness * Math.sin(theta1 - theta2)) / Math.max(0.0001, Math.cos(theta2))
-      );
       ctx.strokeStyle = "rgba(255,120,180,0.85)";
       ctx.lineWidth = 1.5;
       ctx.setLineDash([3, 3]);
@@ -255,35 +305,6 @@ const Refraction = () => {
       ctx.fillText(`i = ${angleDeg}°`, entryX - 8, entryY - 8);
       ctx.textAlign = "left";
       ctx.fillText(`r = ${((theta2 * 180) / Math.PI).toFixed(1)}°`, entryX + 8, entryY + 18);
-
-      // Formula HUD — top-right to avoid rays
-      const sinI = Math.sin(theta1);
-      const sinR = Math.sin(theta2);
-      const rDeg = (theta2 * 180) / Math.PI;
-      const hudW = 260;
-      const hudH = 100;
-      const hudX = W - hudW - 12;
-      const hudY = 12;
-      ctx.save();
-      ctx.fillStyle = "rgba(0,0,0,0.7)";
-      ctx.strokeStyle = "rgba(255,255,255,0.15)";
-      ctx.lineWidth = 1;
-      roundRect(ctx, hudX, hudY, hudW, hudH, 10);
-      ctx.fill(); ctx.stroke();
-      ctx.fillStyle = "rgba(255,235,150,0.95)";
-      ctx.font = "bold 12px Inter, sans-serif";
-      ctx.textAlign = "left";
-      ctx.fillText("স্নেলের সূত্র · Snell's Law", hudX + 10, hudY + 18);
-      ctx.fillStyle = "rgba(255,255,255,0.95)";
-      ctx.font = "12px ui-monospace, monospace";
-      ctx.fillText("n₁·sin(i) = n₂·sin(r)", hudX + 10, hudY + 36);
-      ctx.fillStyle = "rgba(180,220,255,0.95)";
-      ctx.fillText(`1.00·sin(${angleDeg}°) = ${n.toFixed(2)}·sin(${rDeg.toFixed(1)}°)`, hudX + 10, hudY + 52);
-      ctx.fillText(`${sinI.toFixed(3)}  =  ${(n * sinR).toFixed(3)}`, hudX + 10, hudY + 66);
-      ctx.fillStyle = "rgba(255,160,200,0.95)";
-      ctx.font = "11px ui-monospace, monospace";
-      ctx.fillText(`পার্শ্বিক সরণ ≈ ${shift.toFixed(1)} px`, hudX + 10, hudY + 86);
-      ctx.restore();
     };
 
     const drawPrism = (ctx: CanvasRenderingContext2D, W: number, H: number) => {
@@ -291,7 +312,6 @@ const Refraction = () => {
       const cy = H / 2;
       const size = Math.min(W, H) * 0.38;
 
-      // 3D prism
       const depth3D = size * 0.18;
       const apex = { x: cx, y: cy - size * 0.55 };
       const left = { x: cx - size * 0.5, y: cy + size * 0.32 };
@@ -319,7 +339,7 @@ const Refraction = () => {
       ctx.stroke();
       ctx.restore();
 
-      // Right side face
+      // Right face
       ctx.save();
       const sideGrad = ctx.createLinearGradient(right.x, right.y, rightB.x, rightB.y);
       sideGrad.addColorStop(0, "rgba(140,180,240,0.18)");
@@ -387,10 +407,6 @@ const Refraction = () => {
       ctx.stroke();
       ctx.restore();
 
-      const hit = { x: (apex.x + left.x) / 2, y: (apex.y + left.y) / 2 };
-      const dashOffset = animate ? -(tRef.current * 0.08) : 0;
-      const tNorm = (Math.sin(tRef.current * 0.04) + 1) / 2;
-
       const centroid = {
         x: (apex.x + left.x + right.x) / 3,
         y: (apex.y + left.y + right.y) / 3,
@@ -407,190 +423,154 @@ const Refraction = () => {
       };
       const nLeft = outwardNormal(apex, left);
       const nRight = outwardNormal(apex, right);
+      const nBottom = outwardNormal(left, right);
 
-      const inwardN = { x: -nLeft.x, y: -nLeft.y };
-      const aRad = (angleDeg * Math.PI) / 180;
-      const cosA = Math.cos(aRad);
-      const sinA = Math.sin(aRad);
-      const backDir = {
-        x: cosA * (-inwardN.x) - sinA * (-inwardN.y),
-        y: sinA * (-inwardN.x) + cosA * (-inwardN.y),
-      };
-      const incDir = { x: -backDir.x, y: -backDir.y };
-      const inLen = 240;
-      const inStart = { x: hit.x + backDir.x * inLen, y: hit.y + backDir.y * inLen };
+      const dashOffset = animate ? -(tRef.current * 0.08) : 0;
+      const tNorm = (Math.sin(tRef.current * 0.04) + 1) / 2;
 
-      // White incoming beam
-      ctx.save();
-      ctx.shadowColor = "rgba(255,255,255,0.95)";
-      ctx.shadowBlur = 24;
-      ctx.strokeStyle = "rgba(255,255,255,0.55)";
-      ctx.lineWidth = 7;
-      ctx.beginPath();
-      ctx.moveTo(inStart.x, inStart.y);
-      ctx.lineTo(hit.x, hit.y);
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = "rgba(255,255,255,1)";
-      ctx.lineWidth = 2.4;
-      ctx.setLineDash([12, 6]);
-      ctx.lineDashOffset = dashOffset;
-      ctx.beginPath();
-      ctx.moveTo(inStart.x, inStart.y);
-      ctx.lineTo(hit.x, hit.y);
-      ctx.stroke();
-      ctx.restore();
+      const results: { id: number; theta_i: number; deviations: number[] }[] = [];
 
-      // Normal line
-      ctx.save();
-      ctx.strokeStyle = "rgba(255,255,255,0.35)";
-      ctx.setLineDash([4, 4]);
-      ctx.beginPath();
-      ctx.moveTo(hit.x - nLeft.x * 60, hit.y - nLeft.y * 60);
-      ctx.lineTo(hit.x + nLeft.x * 60, hit.y + nLeft.y * 60);
-      ctx.stroke();
-      ctx.restore();
-
-      // Label
-      ctx.save();
-      ctx.fillStyle = "rgba(255,255,255,0.9)";
-      ctx.font = "bold 12px Inter, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(
-        "সাদা আলো (white light)",
-        (inStart.x + hit.x) / 2,
-        (inStart.y + hit.y) / 2 - 14
-      );
-      ctx.restore();
-
-      const refract = (
-        d: { x: number; y: number },
-        nOut: { x: number; y: number },
-        eta: number
-      ) => {
-        let nn = nOut;
-        let cosI = -(d.x * nn.x + d.y * nn.y);
-        if (cosI < 0) { nn = { x: -nn.x, y: -nn.y }; cosI = -cosI; }
-        const sin2T = eta * eta * (1 - cosI * cosI);
-        if (sin2T > 1) return null;
-        const cosT = Math.sqrt(1 - sin2T);
-        return {
-          x: eta * d.x + (eta * cosI - cosT) * nn.x,
-          y: eta * d.y + (eta * cosI - cosT) * nn.y,
+      rays.forEach((ray) => {
+        // Hit point along the left face based on offset (-1..1 from apex->left)
+        const tt = (ray.offset + 1) / 2; // 0 at apex, 1 at left
+        const hit = {
+          x: apex.x + (left.x - apex.x) * tt,
+          y: apex.y + (left.y - apex.y) * tt,
         };
-      };
 
-      const angBetween = (a: { x: number; y: number }, b: { x: number; y: number }) => {
-        const dot = Math.max(-1, Math.min(1, a.x * b.x + a.y * b.y));
-        return (Math.acos(dot) * 180) / Math.PI;
-      };
+        // Build incoming direction: rotate the (-nLeft) (going INTO prism) by -ray.angle
+        // so positive angle means tilted "down" relative to normal.
+        const inwardN = { x: -nLeft.x, y: -nLeft.y };
+        const aRad = (ray.angle * Math.PI) / 180;
+        const cosA = Math.cos(aRad);
+        const sinA = Math.sin(aRad);
+        const backDir = {
+          x: cosA * (-inwardN.x) - sinA * (-inwardN.y),
+          y: sinA * (-inwardN.x) + cosA * (-inwardN.y),
+        };
+        const incDir = { x: -backDir.x, y: -backDir.y };
+        const inLen = 240;
+        const inStart = { x: hit.x + backDir.x * inLen, y: hit.y + backDir.y * inLen };
 
-      const negInc = { x: -incDir.x, y: -incDir.y };
-      const theta_i_deg = angBetween(negInc, nLeft);
-      const perColorDeviation: number[] = [];
-
-      const intersectSeg = (
-        O: { x: number; y: number },
-        D: { x: number; y: number },
-        A: { x: number; y: number },
-        B: { x: number; y: number }
-      ) => {
-        const ex = B.x - A.x, ey = B.y - A.y;
-        const denom = D.x * ey - D.y * ex;
-        if (Math.abs(denom) < 1e-9) return null;
-        const s = ((A.x - O.x) * ey - (A.y - O.y) * ex) / denom;
-        const t = ((A.x - O.x) * D.y - (A.y - O.y) * D.x) / denom;
-        if (s > 1e-4 && t >= -1e-4 && t <= 1 + 1e-4) return s;
-        return null;
-      };
-
-      SPECTRUM.forEach((c) => {
-        const dIn = refract(incDir, nLeft, 1 / c.n);
-        if (!dIn) { perColorDeviation.push(0); return; }
-
-        const sR = intersectSeg(hit, dIn, apex, right);
-        const sB = intersectSeg(hit, dIn, left, right);
-        let s: number | null = null;
-        let exitNormal = nRight;
-        if (sR !== null && (sB === null || sR < sB)) { s = sR; exitNormal = nRight; }
-        else if (sB !== null) { s = sB; exitNormal = outwardNormal(left, right); }
-        if (s === null) { perColorDeviation.push(0); return; }
-
-        const exitX = hit.x + s * dIn.x;
-        const exitY = hit.y + s * dIn.y;
-
-        const dOut = refract(dIn, exitNormal, c.n);
-        if (!dOut) { perColorDeviation.push(0); return; }
-
-        const outLen = 360;
-        const outEndX = exitX + dOut.x * outLen;
-        const outEndY = exitY + dOut.y * outLen;
-
-        const dev = angBetween(incDir, dOut);
-        perColorDeviation.push(dev);
-
+        // White incoming beam
         ctx.save();
-        ctx.shadowColor = c.color;
-        ctx.shadowBlur = 10;
-        ctx.strokeStyle = c.color;
+        ctx.shadowColor = "rgba(255,255,255,0.85)";
+        ctx.shadowBlur = 18;
+        ctx.strokeStyle = "rgba(255,255,255,0.55)";
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(inStart.x, inStart.y);
+        ctx.lineTo(hit.x, hit.y);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = "rgba(255,255,255,1)";
         ctx.lineWidth = 1.8;
+        ctx.setLineDash([10, 6]);
+        ctx.lineDashOffset = dashOffset;
         ctx.beginPath();
-        ctx.moveTo(hit.x, hit.y);
-        ctx.lineTo(exitX, exitY);
+        ctx.moveTo(inStart.x, inStart.y);
+        ctx.lineTo(hit.x, hit.y);
         ctx.stroke();
         ctx.restore();
 
+        // Normal at hit
         ctx.save();
-        ctx.shadowColor = c.color;
-        ctx.shadowBlur = 24;
-        ctx.strokeStyle = c.color;
-        ctx.lineWidth = 3.2;
+        ctx.strokeStyle = "rgba(255,255,255,0.30)";
+        ctx.setLineDash([4, 4]);
         ctx.beginPath();
-        ctx.moveTo(exitX, exitY);
-        ctx.lineTo(outEndX, outEndY);
+        ctx.moveTo(hit.x - nLeft.x * 50, hit.y - nLeft.y * 50);
+        ctx.lineTo(hit.x + nLeft.x * 50, hit.y + nLeft.y * 50);
         ctx.stroke();
         ctx.restore();
 
-        if (animate) {
-          const px = exitX + (outEndX - exitX) * tNorm;
-          const py = exitY + (outEndY - exitY) * tNorm;
+        // Ray label
+        ctx.save();
+        ctx.fillStyle = "rgba(255,255,255,0.95)";
+        ctx.font = "bold 11px Inter, sans-serif";
+        ctx.textAlign = "right";
+        ctx.fillText(`R${ray.id}  i=${ray.angle}°`, inStart.x - 4, inStart.y - 4);
+        ctx.restore();
+
+        const negInc = { x: -incDir.x, y: -incDir.y };
+        const theta_i_deg = angBetween(negInc, nLeft);
+        const deviations: number[] = [];
+
+        SPECTRUM.forEach((c) => {
+          const dIn = refract(incDir, nLeft, 1 / c.n);
+          if (!dIn) { deviations.push(NaN); return; }
+
+          const sR = intersectSeg(hit, dIn, apex, right);
+          const sB = intersectSeg(hit, dIn, left, right);
+          let s: number | null = null;
+          let exitNormal = nRight;
+          if (sR !== null && (sB === null || sR < sB)) { s = sR; exitNormal = nRight; }
+          else if (sB !== null) { s = sB; exitNormal = nBottom; }
+          if (s === null) { deviations.push(NaN); return; }
+
+          const exitX = hit.x + s * dIn.x;
+          const exitY = hit.y + s * dIn.y;
+
+          const dOut = refract(dIn, exitNormal, c.n);
+          if (!dOut) { deviations.push(NaN); return; }
+
+          const outLen = 360;
+          const outEndX = exitX + dOut.x * outLen;
+          const outEndY = exitY + dOut.y * outLen;
+
+          const dev = angBetween(incDir, dOut);
+          deviations.push(dev);
+
+          // inside ray
           ctx.save();
           ctx.shadowColor = c.color;
-          ctx.shadowBlur = 16;
-          ctx.fillStyle = "#fff";
+          ctx.shadowBlur = 8;
+          ctx.strokeStyle = c.color;
+          ctx.lineWidth = 1.4;
           ctx.beginPath();
-          ctx.arc(px, py, 3.5, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.moveTo(hit.x, hit.y);
+          ctx.lineTo(exitX, exitY);
+          ctx.stroke();
           ctx.restore();
-        }
+
+          // outgoing dispersed ray
+          ctx.save();
+          ctx.shadowColor = c.color;
+          ctx.shadowBlur = 20;
+          ctx.strokeStyle = c.color;
+          ctx.lineWidth = 2.6;
+          ctx.beginPath();
+          ctx.moveTo(exitX, exitY);
+          ctx.lineTo(outEndX, outEndY);
+          ctx.stroke();
+          ctx.restore();
+
+          if (animate) {
+            const px = exitX + (outEndX - exitX) * tNorm;
+            const py = exitY + (outEndY - exitY) * tNorm;
+            ctx.save();
+            ctx.shadowColor = c.color;
+            ctx.shadowBlur = 14;
+            ctx.fillStyle = "#fff";
+            ctx.beginPath();
+            ctx.arc(px, py, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        });
+
+        results.push({ id: ray.id, theta_i: theta_i_deg, deviations });
       });
 
-      devRef.current = perColorDeviation;
-
-      // Formula HUD — top-right to avoid rays
-      const hx = W - 280 - 12, hy = 12, hw = 280, hh = 110;
-      ctx.save();
-      ctx.fillStyle = "rgba(0,0,0,0.7)";
-      ctx.strokeStyle = "rgba(255,255,255,0.15)";
-      ctx.lineWidth = 1;
-      roundRect(ctx, hx, hy, hw, hh, 10);
-      ctx.fill(); ctx.stroke();
-      ctx.fillStyle = "rgba(255,235,150,0.95)";
-      ctx.font = "bold 12px Inter, sans-serif";
-      ctx.textAlign = "left";
-      ctx.fillText("বিচ্ছুরণ · Prism Dispersion", hx + 10, hy + 18);
-      ctx.fillStyle = "rgba(255,255,255,0.95)";
-      ctx.font = "12px ui-monospace, monospace";
-      ctx.fillText("sin(r) = sin(i) / n(λ)", hx + 10, hy + 36);
-      ctx.fillText("δ = (i₁+i₂) − A   (A = 60°)", hx + 10, hy + 52);
-      ctx.fillStyle = "rgba(180,220,255,0.95)";
-      ctx.fillText(`আপতন  i ≈ ${theta_i_deg.toFixed(1)}°`, hx + 10, hy + 70);
-      ctx.fillStyle = "rgba(177,75,255,0.95)";
-      ctx.font = "11px ui-monospace, monospace";
-      ctx.fillText(`বেগুনি: n=1.532, বেশি বাঁকে`, hx + 10, hy + 86);
-      ctx.fillStyle = "rgba(255,59,59,0.95)";
-      ctx.fillText(`লাল: n=1.510, কম বাঁকে`, hx + 10, hy + 100);
-      ctx.restore();
+      // publish results to React state (only when changed enough)
+      setRayResults((prev) => {
+        if (prev.length !== results.length) return results;
+        let same = true;
+        for (let i = 0; i < results.length; i++) {
+          const a = prev[i], b = results[i];
+          if (!a || a.id !== b.id || Math.abs(a.theta_i - b.theta_i) > 0.05) { same = false; break; }
+        }
+        return same ? prev : results;
+      });
     };
 
     const loop = () => {
@@ -602,15 +582,27 @@ const Refraction = () => {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [mode, angleDeg, n, thickness, animate]);
+  }, [mode, angleDeg, n, thickness, animate, rays]);
 
+  // Slab values
   const theta1 = (angleDeg * Math.PI) / 180;
   const sinTheta2 = Math.sin(theta1) / n;
   const theta2 = Math.asin(Math.max(-1, Math.min(1, sinTheta2)));
   const rDeg = (theta2 * 180) / Math.PI;
-  const shift = mode === "slab"
-    ? Math.abs((thickness * Math.sin(theta1 - theta2)) / Math.max(0.0001, Math.cos(theta2)))
-    : 0;
+  const shift = Math.abs((thickness * Math.sin(theta1 - theta2)) / Math.max(0.0001, Math.cos(theta2)));
+
+  const addRay = () => {
+    if (rays.length >= 5) return;
+    const id = nextRayId.current++;
+    const angle = 30 + Math.round(Math.random() * 30);
+    const offset = Math.round((Math.random() * 1.4 - 0.7) * 100) / 100;
+    setRays((rs) => [...rs, { id, angle, offset }]);
+  };
+  const removeRay = (id: number) => setRays((rs) => rs.filter((r) => r.id !== id));
+  const updateRay = (id: number, patch: Partial<PrismRay>) =>
+    setRays((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+
+  const colorFor = (id: number) => RAY_PRESET_COLORS[(id - 1) % RAY_PRESET_COLORS.length];
 
   return (
     <>
@@ -660,124 +652,164 @@ const Refraction = () => {
               </div>
             </div>
           </div>
+
           <div className="experiment-controls">
-            <div className="ref-card">
-              <div className="slider-row">
-                <label><span>আপতন কোণ (i)</span><span className="val">{angleDeg}°</span></label>
-                <input
-                  type="range"
-                  min={5}
-                  max={75}
-                  value={angleDeg}
-                  onChange={(e) => setAngleDeg(+e.target.value)}
-                />
+            {mode === "slab" ? (
+              <div className="ref-card">
+                <div className="controls-title"><span>স্ল্যাব নিয়ন্ত্রণ</span></div>
+                <div className="slider-row">
+                  <label><span>আপতন কোণ (i)</span><span className="val">{angleDeg}°</span></label>
+                  <input type="range" min={5} max={75} value={angleDeg} onChange={(e) => setAngleDeg(+e.target.value)} />
+                </div>
+                <div className="slider-row">
+                  <label><span>প্রতিসরাঙ্ক (n)</span><span className="val">{n.toFixed(2)}</span></label>
+                  <input type="range" min={1.0} max={2.0} step={0.01} value={n} onChange={(e) => setN(+e.target.value)} />
+                </div>
+                <div className="slider-row">
+                  <label><span>স্ল্যাবের পুরুত্ব</span><span className="val">{thickness}px</span></label>
+                  <input type="range" min={60} max={260} value={thickness} onChange={(e) => setThickness(+e.target.value)} />
+                </div>
               </div>
-              {mode === "slab" && (
-                <>
-                  <div className="slider-row">
-                    <label><span>প্রতিসরাঙ্ক (n)</span><span className="val">{n.toFixed(2)}</span></label>
-                    <input
-                      type="range"
-                      min={1.0}
-                      max={2.0}
-                      step={0.01}
-                      value={n}
-                      onChange={(e) => setN(+e.target.value)}
-                    />
+            ) : (
+              <div className="ref-card">
+                <div className="controls-title">
+                  <span>আলোক রশ্মি ({rays.length})</span>
+                  <button className="add-btn" onClick={addRay} disabled={rays.length >= 5}>
+                    <Plus /> রশ্মি যোগ
+                  </button>
+                </div>
+                {rays.map((ray) => (
+                  <div key={ray.id} className="ray-card">
+                    <div className="ray-card-head">
+                      <span className="ray-tag">
+                        <span className="ray-dot" style={{ background: colorFor(ray.id), color: colorFor(ray.id) }} />
+                        রশ্মি R{ray.id}
+                      </span>
+                      {rays.length > 1 && (
+                        <button className="del-btn" onClick={() => removeRay(ray.id)} aria-label="remove">
+                          <Trash2 />
+                        </button>
+                      )}
+                    </div>
+                    <div className="slider-row">
+                      <label><span>আপতন কোণ</span><span className="val">{ray.angle}°</span></label>
+                      <input
+                        type="range" min={5} max={75} value={ray.angle}
+                        onChange={(e) => updateRay(ray.id, { angle: +e.target.value })}
+                      />
+                    </div>
+                    <div className="slider-row">
+                      <label><span>আঘাতের অবস্থান</span><span className="val">{ray.offset.toFixed(2)}</span></label>
+                      <input
+                        type="range" min={-0.85} max={0.85} step={0.01} value={ray.offset}
+                        onChange={(e) => updateRay(ray.id, { offset: +e.target.value })}
+                      />
+                    </div>
                   </div>
-                  <div className="slider-row">
-                    <label><span>স্ল্যাবের পুরুত্ব</span><span className="val">{thickness}px</span></label>
-                    <input
-                      type="range"
-                      min={60}
-                      max={260}
-                      value={thickness}
-                      onChange={(e) => setThickness(+e.target.value)}
-                    />
+                ))}
+                {rays.length >= 5 && (
+                  <div style={{ fontSize: 11, color: "var(--gray-500)", marginTop: 4 }}>
+                    সর্বাধিক ৫টি রশ্মি যোগ করা যাবে।
                   </div>
-                </>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* FORMULA CARD */}
-        <div className="ref-card formula-card">
-          {mode === "slab" ? (
-            <>
-              <div className="formula-display">
-                <div className="fraction">
-                  <span className="num">1</span>
-                  <span className="den">v</span>
-                </div>
-                <span className="op">=</span>
-                <div className="fraction">
-                  <span className="num">1</span>
-                  <span className="den">u</span>
-                </div>
-                <span className="op">+</span>
-                <div className="fraction">
-                  <span className="num">1</span>
-                  <span className="den">f</span>
-                </div>
+        {/* SLAB FORMULA + DATA */}
+        {mode === "slab" && (
+          <div className="ref-card formula-card">
+            <div className="section-title bn">সূত্র ও গণনা — কাঁচের স্ল্যাব</div>
+            <div className="formula-display">
+              <span className="op">n₁</span>
+              <div className="fraction">
+                <span className="num">sin(i)</span>
+                <span className="den">sin(r)</span>
               </div>
-              <div className="data-rows">
-                <div className="data-row"><span className="k">স্নেলের সূত্র</span><span className="v bn">n₁·sin(i) = n₂·sin(r)</span></div>
-                <div className="data-row"><span className="k">আপতন কোণ (i)</span><span className="v">{angleDeg}°</span></div>
-                <div className="data-row"><span className="k">প্রতিসরণ কোণ (r)</span><span className="v">{rDeg.toFixed(1)}°</span></div>
-                <div className="data-row"><span className="k">প্রতিসরাঙ্ক (n)</span><span className="v">{n.toFixed(2)}</span></div>
-                <div className="data-row"><span className="k">পার্শ্বিক সরণ</span><span className="v">{shift.toFixed(1)} px</span></div>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="formula-display">
-                <div className="fraction">
-                  <span className="num">sin(r)</span>
-                  <span className="den">sin(i)</span>
-                </div>
-                <span className="op">=</span>
-                <div className="fraction">
-                  <span className="num">1</span>
-                  <span className="den">n(λ)</span>
-                </div>
-              </div>
-              <div className="data-rows">
-                <div className="data-row"><span className="k">বিচ্ছুরণ সূত্র</span><span className="v bn">δ = (i₁+i₂) − A</span></div>
-                <div className="data-row"><span className="k">প্রিজম কোণ (A)</span><span className="v">60°</span></div>
-                <div className="data-row"><span className="k">আপতন কোণ (i)</span><span className="v">{angleDeg}°</span></div>
-              </div>
-            </>
-          )}
-        </div>
+              <span className="op">= n₂</span>
+            </div>
+            <div className="data-rows">
+              <div className="data-row"><span className="k">স্নেলের সূত্র</span><span className="v bn">n₁·sin(i) = n₂·sin(r)</span></div>
+              <div className="data-row"><span className="k">আপতন কোণ (i)</span><span className="v">{angleDeg}°</span></div>
+              <div className="data-row"><span className="k">প্রতিসরণ কোণ (r)</span><span className="v">{rDeg.toFixed(2)}°</span></div>
+              <div className="data-row"><span className="k">প্রতিসরাঙ্ক (n)</span><span className="v">{n.toFixed(2)}</span></div>
+              <div className="data-row"><span className="k">sin(i)</span><span className="v">{Math.sin(theta1).toFixed(3)}</span></div>
+              <div className="data-row"><span className="k">n · sin(r)</span><span className="v">{(n * Math.sin(theta2)).toFixed(3)}</span></div>
+              <div className="data-row"><span className="k">পার্শ্বিক সরণ (d)</span><span className="v">{shift.toFixed(1)} px</span></div>
+              <div className="data-row"><span className="k">d = t·sin(i−r)/cos(r)</span><span className="v">{thickness}·sin({(angleDeg - rDeg).toFixed(1)}°)/cos({rDeg.toFixed(1)}°)</span></div>
+            </div>
+          </div>
+        )}
 
-        {/* SPECTRUM CARD */}
+        {/* PRISM FORMULA + PER-RAY CALCULATIONS */}
         {mode === "prism" && (
-          <div className="ref-card">
-            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: "var(--ten-red)" }}>
-              VIBGYOR · বর্ণালী
-            </div>
-            {SPECTRUM.map((c, i) => (
-              <div key={c.en} className="spectrum-row">
-                <div className="spectrum-swatch" style={{ background: c.color }} />
-                <span className="spectrum-name bn">{c.name}</span>
-                <span className="spectrum-n">n = {c.n.toFixed(3)}</span>
-                <span className="spectrum-dev">δ = {(devRef.current[i] || 0).toFixed(1)}°</span>
+          <>
+            <div className="ref-card formula-card">
+              <div className="section-title bn">সূত্র — প্রিজম বিচ্ছুরণ</div>
+              <div className="formula-display">
+                <div className="fraction">
+                  <span className="num">sin(i)</span>
+                  <span className="den">sin(r)</span>
+                </div>
+                <span className="op">= n(λ)</span>
+                <span className="op">,</span>
+                <span className="op">δ = (i₁ + i₂) − A</span>
               </div>
-            ))}
-          </div>
+              <div className="data-rows">
+                <div className="data-row"><span className="k">প্রিজম কোণ (A)</span><span className="v">60°</span></div>
+                <div className="data-row"><span className="k">মোট রশ্মি</span><span className="v">{rays.length}</span></div>
+                <div className="data-row"><span className="k">নিয়ম</span><span className="v bn">বেগুনি বেশি বাঁকে · লাল কম বাঁকে</span></div>
+              </div>
+            </div>
+
+            <div className="ref-card">
+              <div className="section-title bn">প্রতিটি রশ্মির বিচ্ছুরণ গণনা</div>
+              <div className="calc-grid">
+                {rayResults.map((res) => (
+                  <div key={res.id} className="calc-block">
+                    <div className="calc-block-head">
+                      <span className="ray-dot" style={{ background: colorFor(res.id), color: colorFor(res.id) }} />
+                      <span>রশ্মি R{res.id}</span>
+                      <span style={{ marginLeft: "auto", color: "var(--gray-500)", fontWeight: 500 }}>
+                        i ≈ {res.theta_i.toFixed(1)}°
+                      </span>
+                    </div>
+                    {SPECTRUM.map((c, i) => (
+                      <div key={c.en} className="spectrum-row">
+                        <div className="spectrum-swatch" style={{ background: c.color }} />
+                        <span className="spectrum-name bn">{c.name}</span>
+                        <span className="spectrum-n">n={c.n.toFixed(3)}</span>
+                        <span className="spectrum-dev">
+                          δ = {Number.isFinite(res.deviations[i]) ? `${res.deviations[i].toFixed(1)}°` : "—"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
         )}
 
         {/* EXPLAIN CARD */}
         <div className="ref-card explain-card">
           <div className="explain-header">
             <Info />
-            <div className="explain-title bn">কেন বিচ্ছুরণ ঘটে?</div>
+            <div className="explain-title bn">
+              {mode === "slab" ? "কেন আলো বাঁকা পথে চলে?" : "কেন বিচ্ছুরণ ঘটে?"}
+            </div>
           </div>
           <div className="explain-body bn">
-            বিভিন্ন রঙের আলোর তরঙ্গদৈর্ঘ্য আলাদা, ফলে কাঁচে তাদের প্রতিসরাঙ্ক (n) আলাদা।
-            বেগুনি আলোর n সবচেয়ে বেশি, তাই এটি সবচেয়ে বেশি বাঁকে; লাল আলোর n সবচেয়ে কম,
-            তাই এটি সবচেয়ে কম বাঁকে। ফলে সাদা আলো সাতটি রঙে (বেগুনি–নীল–আসমানী–সবুজ–হলুদ–কমলা–লাল) বিভক্ত হয়।
+            {mode === "slab" ? (
+              <>কাঁচের প্রতিসরাঙ্ক বাতাসের চেয়ে বেশি, তাই আলো কাঁচে ঢোকার সময় অভিলম্বের
+              দিকে এবং বের হওয়ার সময় অভিলম্ব থেকে দূরে বাঁকে। দুই পৃষ্ঠ সমান্তরাল হওয়ায়
+              বের হওয়া রশ্মি আপতন রশ্মির সমান্তরাল থাকে, কিন্তু কিছুটা পার্শ্বিক সরণ ঘটে।</>
+            ) : (
+              <>বিভিন্ন রঙের আলোর তরঙ্গদৈর্ঘ্য আলাদা, ফলে কাঁচে তাদের প্রতিসরাঙ্ক (n) আলাদা।
+              বেগুনি আলোর n সবচেয়ে বেশি, তাই এটি সবচেয়ে বেশি বাঁকে; লাল আলোর n সবচেয়ে কম,
+              তাই এটি সবচেয়ে কম বাঁকে। এখানে একাধিক রশ্মি যোগ করে প্রতিটির আলাদা বিচ্ছুরণ পর্যবেক্ষণ করা যায়।</>
+            )}
           </div>
         </div>
       </div>
