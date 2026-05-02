@@ -18,8 +18,9 @@ const RAY_PRESET_COLORS = ["#FFFFFF", "#FFD166", "#06D6A0", "#EF476F", "#118AB2"
 
 type PrismRay = {
   id: number;
-  angle: number; // incidence angle in degrees relative to left-face normal
-  offset: number; // -1..1 offset along the left face (where it hits)
+  // Source position normalized to canvas size (0..1) so it stays consistent on resize
+  sx: number;
+  sy: number;
 };
 
 const STYLES = `
@@ -159,7 +160,7 @@ const Refraction = () => {
 
   // Multiple rays for prism
   const [rays, setRays] = useState<PrismRay[]>([
-    { id: 1, angle: 45, offset: 0 },
+    { id: 1, sx: 0.12, sy: 0.35 },
   ]);
   const nextRayId = useRef(2);
 
@@ -430,27 +431,44 @@ const Refraction = () => {
 
       const results: { id: number; theta_i: number; deviations: number[] }[] = [];
 
-      rays.forEach((ray) => {
-        // Hit point along the left face based on offset (-1..1 from apex->left)
-        const tt = (ray.offset + 1) / 2; // 0 at apex, 1 at left
-        const hit = {
-          x: apex.x + (left.x - apex.x) * tt,
-          y: apex.y + (left.y - apex.y) * tt,
-        };
+      // Helper to find which face the source-to-prism ray actually hits.
+      const faces: { a: { x: number; y: number }; b: { x: number; y: number }; n: { x: number; y: number } }[] = [
+        { a: apex, b: left, n: nLeft },
+        { a: apex, b: right, n: nRight },
+        { a: left, b: right, n: nBottom },
+      ];
 
-        // Build incoming direction: rotate the (-nLeft) (going INTO prism) by -ray.angle
-        // so positive angle means tilted "down" relative to normal.
-        const inwardN = { x: -nLeft.x, y: -nLeft.y };
-        const aRad = (ray.angle * Math.PI) / 180;
-        const cosA = Math.cos(aRad);
-        const sinA = Math.sin(aRad);
-        const backDir = {
-          x: cosA * (-inwardN.x) - sinA * (-inwardN.y),
-          y: sinA * (-inwardN.x) + cosA * (-inwardN.y),
-        };
-        const incDir = { x: -backDir.x, y: -backDir.y };
-        const inLen = 240;
-        const inStart = { x: hit.x + backDir.x * inLen, y: hit.y + backDir.y * inLen };
+      rays.forEach((ray) => {
+        const inStart = { x: ray.sx * W, y: ray.sy * H };
+
+        // Aim ray from source toward prism centroid as a sensible default direction.
+        const aim = { x: centroid.x - inStart.x, y: centroid.y - inStart.y };
+        const aimLen = Math.hypot(aim.x, aim.y) || 1;
+        const incDir = { x: aim.x / aimLen, y: aim.y / aimLen };
+
+        // Find nearest face hit
+        let bestS = Infinity;
+        let hit: { x: number; y: number } | null = null;
+        let entryNormal: { x: number; y: number } | null = null;
+        for (const f of faces) {
+          const s = intersectSeg(inStart, incDir, f.a, f.b);
+          if (s !== null && s < bestS) {
+            bestS = s;
+            hit = { x: inStart.x + incDir.x * s, y: inStart.y + incDir.y * s };
+            entryNormal = f.n;
+          }
+        }
+        if (!hit || !entryNormal) {
+          // Source is inside or ray misses prism — just draw a stub
+          ctx.save();
+          ctx.fillStyle = "#fff";
+          ctx.beginPath();
+          ctx.arc(inStart.x, inStart.y, 5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          results.push({ id: ray.id, theta_i: 0, deviations: SPECTRUM.map(() => NaN) });
+          return;
+        }
 
         // White incoming beam
         ctx.save();
@@ -473,39 +491,56 @@ const Refraction = () => {
         ctx.stroke();
         ctx.restore();
 
-        // Normal at hit
+        // Source dot (the "lamp")
+        ctx.save();
+        ctx.shadowColor = colorFor(ray.id);
+        ctx.shadowBlur = 16;
+        ctx.fillStyle = colorFor(ray.id);
+        ctx.beginPath();
+        ctx.arc(inStart.x, inStart.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(inStart.x, inStart.y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Normal at hit (along entryNormal)
         ctx.save();
         ctx.strokeStyle = "rgba(255,255,255,0.30)";
         ctx.setLineDash([4, 4]);
         ctx.beginPath();
-        ctx.moveTo(hit.x - nLeft.x * 50, hit.y - nLeft.y * 50);
-        ctx.lineTo(hit.x + nLeft.x * 50, hit.y + nLeft.y * 50);
+        ctx.moveTo(hit.x - entryNormal.x * 50, hit.y - entryNormal.y * 50);
+        ctx.lineTo(hit.x + entryNormal.x * 50, hit.y + entryNormal.y * 50);
         ctx.stroke();
         ctx.restore();
+
+        const negInc = { x: -incDir.x, y: -incDir.y };
+        const theta_i_deg = angBetween(negInc, entryNormal);
 
         // Ray label
         ctx.save();
         ctx.fillStyle = "rgba(255,255,255,0.95)";
         ctx.font = "bold 11px Inter, sans-serif";
-        ctx.textAlign = "right";
-        ctx.fillText(`R${ray.id}  i=${ray.angle}°`, inStart.x - 4, inStart.y - 4);
+        ctx.textAlign = "left";
+        ctx.fillText(`R${ray.id}  i=${theta_i_deg.toFixed(0)}°`, inStart.x + 10, inStart.y - 8);
         ctx.restore();
 
-        const negInc = { x: -incDir.x, y: -incDir.y };
-        const theta_i_deg = angBetween(negInc, nLeft);
         const deviations: number[] = [];
 
         SPECTRUM.forEach((c) => {
-          const dIn = refract(incDir, nLeft, 1 / c.n);
+          const dIn = refract(incDir, entryNormal!, 1 / c.n);
           if (!dIn) { deviations.push(NaN); return; }
 
-          const sR = intersectSeg(hit, dIn, apex, right);
-          const sB = intersectSeg(hit, dIn, left, right);
+          // Find nearest exit face (any face that isn't the entry one)
           let s: number | null = null;
-          let exitNormal = nRight;
-          if (sR !== null && (sB === null || sR < sB)) { s = sR; exitNormal = nRight; }
-          else if (sB !== null) { s = sB; exitNormal = nBottom; }
-          if (s === null) { deviations.push(NaN); return; }
+          let exitNormal: { x: number; y: number } | null = null;
+          for (const f of faces) {
+            if (f.n === entryNormal) continue;
+            const ss = intersectSeg(hit, dIn, f.a, f.b);
+            if (ss !== null && (s === null || ss < s)) { s = ss; exitNormal = f.n; }
+          }
+          if (s === null || !exitNormal) { deviations.push(NaN); return; }
 
           const exitX = hit.x + s * dIn.x;
           const exitY = hit.y + s * dIn.y;
@@ -592,15 +627,35 @@ const Refraction = () => {
   const shift = Math.abs((thickness * Math.sin(theta1 - theta2)) / Math.max(0.0001, Math.cos(theta2)));
 
   const addRay = () => {
-    if (rays.length >= 5) return;
+    if (rays.length >= 6) return;
     const id = nextRayId.current++;
-    const angle = 30 + Math.round(Math.random() * 30);
-    const offset = Math.round((Math.random() * 1.4 - 0.7) * 100) / 100;
-    setRays((rs) => [...rs, { id, angle, offset }]);
+    // Place at a random spot on the left half of the canvas
+    const sx = 0.05 + Math.random() * 0.25;
+    const sy = 0.2 + Math.random() * 0.6;
+    setRays((rs) => [...rs, { id, sx, sy }]);
   };
   const removeRay = (id: number) => setRays((rs) => rs.filter((r) => r.id !== id));
   const updateRay = (id: number, patch: Partial<PrismRay>) =>
     setRays((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+
+  // Click-to-place mode: when on, the next canvas click adds a ray at that spot.
+  const [placingRay, setPlacingRay] = useState(false);
+
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (mode !== "prism") return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const sx = (e.clientX - rect.left) / rect.width;
+    const sy = (e.clientY - rect.top) / rect.height;
+    if (rays.length >= 6) {
+      setPlacingRay(false);
+      return;
+    }
+    const id = nextRayId.current++;
+    setRays((rs) => [...rs, { id, sx, sy }]);
+    setPlacingRay(false);
+  };
 
   const colorFor = (id: number) => RAY_PRESET_COLORS[(id - 1) % RAY_PRESET_COLORS.length];
 
@@ -639,7 +694,7 @@ const Refraction = () => {
           <div className="experiment-canvas">
             <div className="ref-card canvas-card">
               <div className="canvas-wrap">
-                <canvas ref={canvasRef} className="block w-full" style={{ height: 560 }} />
+                <canvas ref={canvasRef} onClick={handleCanvasClick} className="block w-full" style={{ height: 560, cursor: mode === "prism" && placingRay ? "crosshair" : "default" }} />
               </div>
               <div className="action-row">
                 <button
@@ -673,43 +728,54 @@ const Refraction = () => {
             ) : (
               <div className="ref-card">
                 <div className="controls-title">
-                  <span>আলোক রশ্মি ({rays.length})</span>
-                  <button className="add-btn" onClick={addRay} disabled={rays.length >= 5}>
-                    <Plus /> রশ্মি যোগ
+                  <span>আলোক উৎস ({rays.length})</span>
+                  <button
+                    className="add-btn"
+                    onClick={() => setPlacingRay((p) => !p)}
+                    disabled={rays.length >= 6}
+                    style={placingRay ? { background: "var(--success)", borderColor: "var(--success-dark)" } : undefined}
+                  >
+                    <Plus /> {placingRay ? "ক্যানভাসে ক্লিক করুন" : "আলো যোগ"}
                   </button>
+                </div>
+                <div style={{ fontSize: 11, color: "var(--gray-500)", marginBottom: 8 }}>
+                  "আলো যোগ" চাপুন, তারপর ক্যানভাসের যেকোনো জায়গায় ক্লিক করুন — সেখান থেকে আলো প্রিজমে গিয়ে পড়বে।
                 </div>
                 {rays.map((ray) => (
                   <div key={ray.id} className="ray-card">
                     <div className="ray-card-head">
                       <span className="ray-tag">
                         <span className="ray-dot" style={{ background: colorFor(ray.id), color: colorFor(ray.id) }} />
-                        রশ্মি R{ray.id}
+                        উৎস R{ray.id}
                       </span>
-                      {rays.length > 1 && (
-                        <button className="del-btn" onClick={() => removeRay(ray.id)} aria-label="remove">
-                          <Trash2 />
-                        </button>
-                      )}
+                      <button className="del-btn" onClick={() => removeRay(ray.id)} aria-label="remove">
+                        <Trash2 />
+                      </button>
                     </div>
                     <div className="slider-row">
-                      <label><span>আপতন কোণ</span><span className="val">{ray.angle}°</span></label>
+                      <label><span>X অবস্থান</span><span className="val">{Math.round(ray.sx * 100)}%</span></label>
                       <input
-                        type="range" min={5} max={75} value={ray.angle}
-                        onChange={(e) => updateRay(ray.id, { angle: +e.target.value })}
+                        type="range" min={0} max={1} step={0.01} value={ray.sx}
+                        onChange={(e) => updateRay(ray.id, { sx: +e.target.value })}
                       />
                     </div>
                     <div className="slider-row">
-                      <label><span>আঘাতের অবস্থান</span><span className="val">{ray.offset.toFixed(2)}</span></label>
+                      <label><span>Y অবস্থান</span><span className="val">{Math.round(ray.sy * 100)}%</span></label>
                       <input
-                        type="range" min={-0.85} max={0.85} step={0.01} value={ray.offset}
-                        onChange={(e) => updateRay(ray.id, { offset: +e.target.value })}
+                        type="range" min={0} max={1} step={0.01} value={ray.sy}
+                        onChange={(e) => updateRay(ray.id, { sy: +e.target.value })}
                       />
                     </div>
                   </div>
                 ))}
-                {rays.length >= 5 && (
+                {rays.length === 0 && (
+                  <div style={{ fontSize: 12, color: "var(--gray-500)", padding: 12, textAlign: "center", border: "1px dashed var(--gray-300)", borderRadius: 8 }}>
+                    কোনো আলো নেই। উপরে "আলো যোগ" চাপুন।
+                  </div>
+                )}
+                {rays.length >= 6 && (
                   <div style={{ fontSize: 11, color: "var(--gray-500)", marginTop: 4 }}>
-                    সর্বাধিক ৫টি রশ্মি যোগ করা যাবে।
+                    সর্বাধিক ৬টি আলো যোগ করা যাবে।
                   </div>
                 )}
               </div>
