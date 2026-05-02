@@ -694,7 +694,7 @@ const Refraction = () => {
           <div className="experiment-canvas">
             <div className="ref-card canvas-card">
               <div className="canvas-wrap">
-                <canvas ref={canvasRef} className="block w-full" style={{ height: 560 }} />
+                <canvas ref={canvasRef} onClick={handleCanvasClick} className="block w-full" style={{ height: 560, cursor: mode === "prism" && placingRay ? "crosshair" : "default" }} />
               </div>
               <div className="action-row">
                 <button
@@ -728,43 +728,54 @@ const Refraction = () => {
             ) : (
               <div className="ref-card">
                 <div className="controls-title">
-                  <span>আলোক রশ্মি ({rays.length})</span>
-                  <button className="add-btn" onClick={addRay} disabled={rays.length >= 5}>
-                    <Plus /> রশ্মি যোগ
+                  <span>আলোক উৎস ({rays.length})</span>
+                  <button
+                    className="add-btn"
+                    onClick={() => setPlacingRay((p) => !p)}
+                    disabled={rays.length >= 6}
+                    style={placingRay ? { background: "var(--success)", borderColor: "var(--success-dark)" } : undefined}
+                  >
+                    <Plus /> {placingRay ? "ক্যানভাসে ক্লিক করুন" : "আলো যোগ"}
                   </button>
+                </div>
+                <div style={{ fontSize: 11, color: "var(--gray-500)", marginBottom: 8 }}>
+                  "আলো যোগ" চাপুন, তারপর ক্যানভাসের যেকোনো জায়গায় ক্লিক করুন — সেখান থেকে আলো প্রিজমে গিয়ে পড়বে।
                 </div>
                 {rays.map((ray) => (
                   <div key={ray.id} className="ray-card">
                     <div className="ray-card-head">
                       <span className="ray-tag">
                         <span className="ray-dot" style={{ background: colorFor(ray.id), color: colorFor(ray.id) }} />
-                        রশ্মি R{ray.id}
+                        উৎস R{ray.id}
                       </span>
-                      {rays.length > 1 && (
-                        <button className="del-btn" onClick={() => removeRay(ray.id)} aria-label="remove">
-                          <Trash2 />
-                        </button>
-                      )}
+                      <button className="del-btn" onClick={() => removeRay(ray.id)} aria-label="remove">
+                        <Trash2 />
+                      </button>
                     </div>
                     <div className="slider-row">
-                      <label><span>আপতন কোণ</span><span className="val">{ray.angle}°</span></label>
+                      <label><span>X অবস্থান</span><span className="val">{Math.round(ray.sx * 100)}%</span></label>
                       <input
-                        type="range" min={5} max={75} value={ray.angle}
-                        onChange={(e) => updateRay(ray.id, { angle: +e.target.value })}
+                        type="range" min={0} max={1} step={0.01} value={ray.sx}
+                        onChange={(e) => updateRay(ray.id, { sx: +e.target.value })}
                       />
                     </div>
                     <div className="slider-row">
-                      <label><span>আঘাতের অবস্থান</span><span className="val">{ray.offset.toFixed(2)}</span></label>
+                      <label><span>Y অবস্থান</span><span className="val">{Math.round(ray.sy * 100)}%</span></label>
                       <input
-                        type="range" min={-0.85} max={0.85} step={0.01} value={ray.offset}
-                        onChange={(e) => updateRay(ray.id, { offset: +e.target.value })}
+                        type="range" min={0} max={1} step={0.01} value={ray.sy}
+                        onChange={(e) => updateRay(ray.id, { sy: +e.target.value })}
                       />
                     </div>
                   </div>
                 ))}
-                {rays.length >= 5 && (
+                {rays.length === 0 && (
+                  <div style={{ fontSize: 12, color: "var(--gray-500)", padding: 12, textAlign: "center", border: "1px dashed var(--gray-300)", borderRadius: 8 }}>
+                    কোনো আলো নেই। উপরে "আলো যোগ" চাপুন।
+                  </div>
+                )}
+                {rays.length >= 6 && (
                   <div style={{ fontSize: 11, color: "var(--gray-500)", marginTop: 4 }}>
-                    সর্বাধিক ৫টি রশ্মি যোগ করা যাবে।
+                    সর্বাধিক ৬টি আলো যোগ করা যাবে।
                   </div>
                 )}
               </div>
