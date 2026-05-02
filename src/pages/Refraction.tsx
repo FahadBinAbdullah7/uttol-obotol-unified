@@ -431,27 +431,44 @@ const Refraction = () => {
 
       const results: { id: number; theta_i: number; deviations: number[] }[] = [];
 
-      rays.forEach((ray) => {
-        // Hit point along the left face based on offset (-1..1 from apex->left)
-        const tt = (ray.offset + 1) / 2; // 0 at apex, 1 at left
-        const hit = {
-          x: apex.x + (left.x - apex.x) * tt,
-          y: apex.y + (left.y - apex.y) * tt,
-        };
+      // Helper to find which face the source-to-prism ray actually hits.
+      const faces: { a: { x: number; y: number }; b: { x: number; y: number }; n: { x: number; y: number } }[] = [
+        { a: apex, b: left, n: nLeft },
+        { a: apex, b: right, n: nRight },
+        { a: left, b: right, n: nBottom },
+      ];
 
-        // Build incoming direction: rotate the (-nLeft) (going INTO prism) by -ray.angle
-        // so positive angle means tilted "down" relative to normal.
-        const inwardN = { x: -nLeft.x, y: -nLeft.y };
-        const aRad = (ray.angle * Math.PI) / 180;
-        const cosA = Math.cos(aRad);
-        const sinA = Math.sin(aRad);
-        const backDir = {
-          x: cosA * (-inwardN.x) - sinA * (-inwardN.y),
-          y: sinA * (-inwardN.x) + cosA * (-inwardN.y),
-        };
-        const incDir = { x: -backDir.x, y: -backDir.y };
-        const inLen = 240;
-        const inStart = { x: hit.x + backDir.x * inLen, y: hit.y + backDir.y * inLen };
+      rays.forEach((ray) => {
+        const inStart = { x: ray.sx * W, y: ray.sy * H };
+
+        // Aim ray from source toward prism centroid as a sensible default direction.
+        const aim = { x: centroid.x - inStart.x, y: centroid.y - inStart.y };
+        const aimLen = Math.hypot(aim.x, aim.y) || 1;
+        const incDir = { x: aim.x / aimLen, y: aim.y / aimLen };
+
+        // Find nearest face hit
+        let bestS = Infinity;
+        let hit: { x: number; y: number } | null = null;
+        let entryNormal: { x: number; y: number } | null = null;
+        for (const f of faces) {
+          const s = intersectSeg(inStart, incDir, f.a, f.b);
+          if (s !== null && s < bestS) {
+            bestS = s;
+            hit = { x: inStart.x + incDir.x * s, y: inStart.y + incDir.y * s };
+            entryNormal = f.n;
+          }
+        }
+        if (!hit || !entryNormal) {
+          // Source is inside or ray misses prism — just draw a stub
+          ctx.save();
+          ctx.fillStyle = "#fff";
+          ctx.beginPath();
+          ctx.arc(inStart.x, inStart.y, 5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          results.push({ id: ray.id, theta_i: 0, deviations: SPECTRUM.map(() => NaN) });
+          return;
+        }
 
         // White incoming beam
         ctx.save();
@@ -474,26 +491,41 @@ const Refraction = () => {
         ctx.stroke();
         ctx.restore();
 
-        // Normal at hit
+        // Source dot (the "lamp")
+        ctx.save();
+        ctx.shadowColor = colorFor(ray.id);
+        ctx.shadowBlur = 16;
+        ctx.fillStyle = colorFor(ray.id);
+        ctx.beginPath();
+        ctx.arc(inStart.x, inStart.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(inStart.x, inStart.y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Normal at hit (along entryNormal)
         ctx.save();
         ctx.strokeStyle = "rgba(255,255,255,0.30)";
         ctx.setLineDash([4, 4]);
         ctx.beginPath();
-        ctx.moveTo(hit.x - nLeft.x * 50, hit.y - nLeft.y * 50);
-        ctx.lineTo(hit.x + nLeft.x * 50, hit.y + nLeft.y * 50);
+        ctx.moveTo(hit.x - entryNormal.x * 50, hit.y - entryNormal.y * 50);
+        ctx.lineTo(hit.x + entryNormal.x * 50, hit.y + entryNormal.y * 50);
         ctx.stroke();
         ctx.restore();
+
+        const negInc = { x: -incDir.x, y: -incDir.y };
+        const theta_i_deg = angBetween(negInc, entryNormal);
 
         // Ray label
         ctx.save();
         ctx.fillStyle = "rgba(255,255,255,0.95)";
         ctx.font = "bold 11px Inter, sans-serif";
-        ctx.textAlign = "right";
-        ctx.fillText(`R${ray.id}  i=${ray.angle}°`, inStart.x - 4, inStart.y - 4);
+        ctx.textAlign = "left";
+        ctx.fillText(`R${ray.id}  i=${theta_i_deg.toFixed(0)}°`, inStart.x + 10, inStart.y - 8);
         ctx.restore();
 
-        const negInc = { x: -incDir.x, y: -incDir.y };
-        const theta_i_deg = angBetween(negInc, nLeft);
         const deviations: number[] = [];
 
         SPECTRUM.forEach((c) => {
