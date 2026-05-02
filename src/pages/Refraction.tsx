@@ -160,7 +160,7 @@ const Refraction = () => {
 
   // Multiple rays for prism
   const [rays, setRays] = useState<PrismRay[]>([
-    { id: 1, angle: 45, offset: 0 },
+    { id: 1, sx: 0.12, sy: 0.35 },
   ]);
   const nextRayId = useRef(2);
 
