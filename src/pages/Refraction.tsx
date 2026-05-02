@@ -18,8 +18,9 @@ const RAY_PRESET_COLORS = ["#FFFFFF", "#FFD166", "#06D6A0", "#EF476F", "#118AB2"
 
 type PrismRay = {
   id: number;
-  angle: number; // incidence angle in degrees relative to left-face normal
-  offset: number; // -1..1 offset along the left face (where it hits)
+  // Source position normalized to canvas size (0..1) so it stays consistent on resize
+  sx: number;
+  sy: number;
 };
 
 const STYLES = `
